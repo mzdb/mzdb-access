@@ -1,4 +1,4 @@
 mzdb-access
 ===========
 
-A Java library for reading mzDB files
+A Java library for reading and querying mzDB files
