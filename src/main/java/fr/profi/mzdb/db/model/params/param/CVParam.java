@@ -4,26 +4,26 @@ import javax.xml.bind.annotation.*;
 
 //@XmlAccessorType(XmlAccessType.FIELD)
 public class CVParam {
-  
-  @XmlAttribute
+
+	@XmlAttribute
 	protected String value = "";
-	
-  @XmlAttribute
+
+	@XmlAttribute
 	protected String cvRef = "MS";
-	
-  @XmlAttribute
+
+	@XmlAttribute
 	protected String name = "";
-	
-  @XmlAttribute
+
+	@XmlAttribute
 	protected String accession = "";
 
-  @XmlAttribute
-  protected String unitCvRef = "UO";
-  
-  @XmlAttribute
+	@XmlAttribute
+	protected String unitCvRef = "UO";
+
+	@XmlAttribute
 	protected String unitAccession = "";
-  
-  @XmlAttribute
+
+	@XmlAttribute
 	protected String unitName = "";
 
 	public String getValue() {

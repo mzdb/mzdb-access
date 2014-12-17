@@ -133,6 +133,40 @@ public class SQLiteQuery {
 
 		return Arrays.copyOfRange(buffer, 0, loadedInts);
 	}
+	
+	public long[] extractLongs(int bufferLength) throws SQLiteException {
+
+		long[] buffer = new long[bufferLength];
+		int loadedLongs = this.stmt.loadLongs(0, buffer, 0, bufferLength);
+
+		this.dispose();
+
+		return Arrays.copyOfRange(buffer, 0, loadedLongs);
+	}
+	
+	public float[] extractFloats(int bufferLength) throws SQLiteException {
+
+		float[] buffer = null;
+
+		if (this.isStatementDisposed() == false) {
+			
+			buffer = new float[bufferLength];
+
+			// Iterate over each record
+			int idx = 0;
+			while (this.stmt.step()) {
+				buffer[idx] = (float) this.stmt.columnDouble(0);
+				idx++;
+			}
+
+			// Dispose the statement
+			this.dispose();
+		} else {
+			buffer = new float[0];
+		}
+
+		return buffer;
+	}
 
 	public double extractSingleDouble() throws SQLiteException {
 		this.stmt.step();

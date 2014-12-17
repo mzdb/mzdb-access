@@ -41,7 +41,7 @@ public class MzDbHeaderReader {
 	 *             the sQ lite exception
 	 */
 	public MzDbHeader getMzDbHeader() throws SQLiteException {
-		return new SQLiteQuery(connection, "select * from mzdb").extractRecord(new ISQLiteRecordExtraction<MzDbHeader>() {
+		return new SQLiteQuery(connection, "SELECT * FROM mzdb").extractRecord(new ISQLiteRecordExtraction<MzDbHeader>() {
 
 					public MzDbHeader extract(SQLiteRecord r) throws SQLiteException {
 
@@ -49,6 +49,7 @@ public class MzDbHeaderReader {
 						int creationTimestamp = r.columnInt(MzdbTable.CREATION_TIMESTAMP);
 						String paramTreeAsStr = r.columnString(MzdbTable.PARAM_TREE);
 						ParamTree paramTree =  ParamTreeParser.parseParamTree(paramTreeAsStr);
+						
 						return new MzDbHeader(version, creationTimestamp, paramTree);
 					}
 				});

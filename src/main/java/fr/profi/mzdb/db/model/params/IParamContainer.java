@@ -1,9 +1,8 @@
-/**
- * 
- */
 package fr.profi.mzdb.db.model.params;
 
 import java.util.List;
+
+import javax.xml.bind.annotation.XmlElement;
 
 import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.model.params.param.UserParam;
@@ -22,6 +21,7 @@ public interface IParamContainer {
 	 * 
 	 * @return the cV params
 	 */
+	@XmlElement(name = "cvParam", type = CVParam.class, required = false)
 	public List<CVParam> getCVParams();
 
 	/**
@@ -29,9 +29,17 @@ public interface IParamContainer {
 	 * 
 	 * @return the user params
 	 */
+	@XmlElement(name = "userParam", type = UserParam.class, required = false)
 	public List<UserParam> getUserParams();
 	
+	/**
+	 * Gets the user texts.
+	 * 
+	 * @return the user texts
+	 */
+	@XmlElement(name = "userText", type = UserParam.class, required = false)
 	public List<UserText> getUserTexts();
+	
 	/**
 	 * Gets the user param.
 	 * 

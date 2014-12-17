@@ -22,11 +22,14 @@ public class SQLiteRecord {
 		this.stmt = sqliteQuery.stmt;
 		this.colIdxByColName = sqliteQuery.resultDesc.colIdxByColName;
 	}
+	
+	public SQLiteStatement getStatement() {
+		return this.stmt;
+	}
 
 	public int getColumnIndex(String colName) throws SQLiteException {
 		if (this.colIdxByColName.containsKey(colName) == false) {
-			throw new SQLiteException(-1, "undefined column '" + colName + "' in query: "
-					+ this.sqliteQuery.queryString);
+			throw new SQLiteException(-1, "undefined column '" + colName + "' in query: "+ this.sqliteQuery.queryString);
 		}
 
 		return this.colIdxByColName.get(colName);
@@ -36,6 +39,7 @@ public class SQLiteRecord {
 		return this.sqliteQuery.resultDesc.getColumnNames();
 	}
 
+	// TODO: replace calls to name().toLowerCase() by toString() ?
 	public String columnString(Enum<?> enumeration) throws SQLiteException {
 		return this.columnString(enumeration.name().toLowerCase());
 	}

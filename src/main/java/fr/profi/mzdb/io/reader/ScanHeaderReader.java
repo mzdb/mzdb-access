@@ -8,8 +8,9 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
 import fr.profi.mzdb.MzDbReader;
-import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.table.SpectrumTable;
+import fr.profi.mzdb.model.DataEncoding;
+import fr.profi.mzdb.model.PeakEncoding;
 import fr.profi.mzdb.model.ScanHeader;
 import fr.profi.mzdb.utils.sqlite.ISQLiteRecordExtraction;
 import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
@@ -20,11 +21,9 @@ import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
  * 
  */
 public class ScanHeaderReader extends AbstractMzDbReaderHelper {
-
+	
 	/** The time index width. */
-	static int TIME_INDEX_WIDTH = 15;
-
-	private HashMap<Integer, ArrayList<Integer>> _scanIdsByTimeIndex = null;
+	protected final static int TIME_INDEX_WIDTH = 15;
 
 	/**
 	 * @param mzDbReader
@@ -39,48 +38,46 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 	private ISQLiteRecordExtraction<ScanHeader> _scanHeaderExtractor = new ISQLiteRecordExtraction<ScanHeader>() {
 
 		public ScanHeader extract(SQLiteRecord record) throws SQLiteException {
-
-			int msLevel = record.columnInt(SpectrumTable.MS_LEVEL);
+		  
+		  SQLiteStatement stmt = record.getStatement();
+			
+			//long nano = System.nanoTime();
+			int msLevel = stmt.columnInt(SpectrumTable.MS_LEVEL.ordinal());
 
 			double precursorMz = 0.0;
 			int precursorCharge = 0;
 			if (msLevel == 2) {
-				precursorMz = record.columnDouble(SpectrumTable.MAIN_PRECURSOR_MZ);
-				precursorCharge = record.columnInt(SpectrumTable.MAIN_PRECURSOR_CHARGE);
+				precursorMz = stmt.columnDouble(SpectrumTable.MAIN_PRECURSOR_MZ.ordinal());
+				precursorCharge = stmt.columnInt(SpectrumTable.MAIN_PRECURSOR_CHARGE.ordinal());
 			}
+
+			int bbFirstSpectrumId = stmt.columnInt(SpectrumTable.BB_FIRST_SPECTRUM_ID.ordinal());
 			
-			int bbFirstSpectrumId = record.columnInt(SpectrumTable.BB_FIRST_SPECTRUM_ID);
-
-			// Parse param tree
-			String paramTreeAsStr = record.columnString(SpectrumTable.PARAM_TREE);
-			ParamTree paramTree =  ParamTreeParser.parseParamTree(paramTreeAsStr);
-
-			String val = paramTree.getUserParam("in_high_res").getValue();
-			// little workaround to retrieve the data resolution
-			// FIXME: works only for Orbitrap data
-			// FIXME: retrieve the resolution from the data encoding param tree
-			boolean isHighRes = (val.equals("true")) ? true : false;
-
+			DataEncoding dataEnc = mzDbReader.getDataEncoding( stmt.columnInt(SpectrumTable.DATA_ENCODING_ID.ordinal()) );
+			
+			boolean isHighRes = dataEnc.getPeakEncoding() == PeakEncoding.LOW_RES_PEAK ? false : true;
+			
 			ScanHeader sh = new ScanHeader(
-				record.columnInt(SpectrumTable.ID),
-				record.columnInt(SpectrumTable.INITIAL_ID),
-				record.columnInt(SpectrumTable.CYCLE),
-				(float) record.columnDouble(SpectrumTable.TIME),
+			  stmt.columnInt(SpectrumTable.ID.ordinal()),
+			  stmt.columnInt(SpectrumTable.INITIAL_ID.ordinal()),
+			  stmt.columnInt(SpectrumTable.CYCLE.ordinal()),
+				(float) stmt.columnDouble(SpectrumTable.TIME.ordinal()),
 				msLevel,
-				record.columnInt(SpectrumTable.DATA_POINTS_COUNT),
+				stmt.columnInt(SpectrumTable.DATA_POINTS_COUNT.ordinal()),
 				isHighRes,
-				(float) record.columnDouble(SpectrumTable.TIC),
-				record.columnDouble(SpectrumTable.BASE_PEAK_MZ),
-				(float) record.columnDouble(SpectrumTable.BASE_PEAK_INTENSITY),
+				(float) stmt.columnDouble(SpectrumTable.TIC.ordinal()),
+				stmt.columnDouble(SpectrumTable.BASE_PEAK_MZ.ordinal()),
+				(float) stmt.columnDouble(SpectrumTable.BASE_PEAK_INTENSITY.ordinal()),
 				precursorMz,
 				precursorCharge,
 				bbFirstSpectrumId
 			);
-
-			//sh.setParamTree(paramTree);
 			
-			return sh;
+			//System.out.println(System.nanoTime() - nano);
 
+			// sh.setParamTree(paramTree);
+
+			return sh;
 		}
 
 	};
@@ -98,9 +95,11 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 			return this.entityCache.scanHeaders;
 		} else {
 
+			long nano = System.nanoTime();
 			ScanHeader[] scanHeaders = new ScanHeader[this.mzDbReader.getScansCount()];
-			new SQLiteQuery(connection, _scanHeaderQueryStr).extractRecords(this._scanHeaderExtractor,
-					scanHeaders);
+			
+			new SQLiteQuery(connection, _scanHeaderQueryStr)
+				.extractRecords(this._scanHeaderExtractor, scanHeaders);
 
 			if (this.entityCache != null)
 				this.entityCache.scanHeaders = scanHeaders;
@@ -123,6 +122,7 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 			return this.entityCache.scanHeaderById;
 		} else {
 			ScanHeader[] scanHeaders = this.getScanHeaders();
+
 			Map<Integer, ScanHeader> scanHeaderById = new HashMap<Integer, ScanHeader>(scanHeaders.length);
 
 			for (ScanHeader scanHeader : scanHeaders)
@@ -152,81 +152,37 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 			return new SQLiteQuery(connection, queryStr).bind(1, id).extractRecord(this._scanHeaderExtractor);
 		}
 	}
-
+	
 	/**
-	 * Gets the scan id by time.
+	 * Gets the scan time by id.
 	 * 
-	 * @return the scan id by time
-	 * @throws SQLiteException
-	 *             the sQ lite exception
+	 * @return the scan time mapped by the scan id
+	 * @throws SQLiteException the SQLite exception
 	 */
-	// TODO: remove this method and related cache when mzDB is updated
-	public Map<Float, Integer> getScanIdByTime() throws SQLiteException {
+	public Map<Integer, Float> getScanTimeById() throws SQLiteException {
 
-		if (this.entityCache != null && this.entityCache.scanIdByTime != null) {
-			return this.entityCache.scanIdByTime;
+		if (this.entityCache != null && this.entityCache.scanTimeById != null) {
+			return this.entityCache.scanTimeById;
 		} else {
-			ScanHeader[] scanHeaders = this.getScanHeaders();
-			HashMap<Float, Integer> scanIdByTime = new HashMap<Float, Integer>(scanHeaders.length);
+			int scansCount = this.mzDbReader.getScansCount();
+			float[] scanTimes = new SQLiteQuery(connection, "SELECT time FROM spectrum").extractFloats(scansCount);
 
-			for (ScanHeader h : scanHeaders)
-				scanIdByTime.put(h.getTime(), h.getId());
+			Map<Integer, Float> scanTimeById = new HashMap<Integer, Float>(scansCount);
+
+			// TODO: check this approach is not too dangerous
+			int scanId = 0;
+			for (float scanTime : scanTimes) {
+				scanId++;
+				scanTimeById.put(scanId, scanTime);
+			}
 
 			if (this.entityCache != null)
-				this.entityCache.scanIdByTime = scanIdByTime;
+				this.entityCache.scanTimeById = scanTimeById;
 
-			return scanIdByTime;
+			return scanTimeById;
 		}
-
 	}
-
-	/**
-	 * Gets the scan header by initial id.
-	 * 
-	 * @return the scan header by initial id
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	/*
-	 * public HashMap<Integer, ScanHeader> getScanHeaderByInitialId() throws SQLiteException { //ScanHeader[]
-	 * scanHeaders = getScanHeaders(); HashMap<Integer, ScanHeader> scanHeaderByInitialId = new
-	 * HashMap<Integer, ScanHeader>();
-	 * 
-	 * for (ScanHeader scanHeader : this.getScanHeaders()) {
-	 * scanHeaderByInitialId.put(scanHeader.getInitialId(), scanHeader); }
-	 * 
-	 * return scanHeaderByInitialId; }
-	 */
-
-	/**
-	 * Gets the scan ids by time index.
-	 * 
-	 * @return hashmap of key time index value array of scanIds
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	public HashMap<Integer, ArrayList<Integer>> getScanIdsByTimeIndex() throws SQLiteException {
-
-		// TODO: use entity cache
-
-		if (this._scanIdsByTimeIndex == null) {
-
-			this._scanIdsByTimeIndex = new HashMap<Integer, ArrayList<Integer>>();
-			ScanHeader[] scanHeaders = this.getScanHeaders();
-
-			for (ScanHeader scanH : scanHeaders) {
-				int timeIndex = (int) (scanH.getTime() / TIME_INDEX_WIDTH);
-
-				if (_scanIdsByTimeIndex.get(timeIndex) == null)
-					this._scanIdsByTimeIndex.put(timeIndex, new ArrayList<Integer>());
-
-				this._scanIdsByTimeIndex.get(timeIndex).add(scanH.getId());
-			}
-		}
-
-		return this._scanIdsByTimeIndex;
-	}
-
+	
 	/**
 	 * Gets the scan header for time.
 	 * 
@@ -234,45 +190,85 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 	 *            the time
 	 * @param msLevel
 	 *            the ms level
-	 * @return scanheader the closest to the time input parameter
+	 * @return ScanHeader the closest to the time input parameter
 	 * @throws Exception
 	 */
 	public ScanHeader getScanHeaderForTime(float time, int msLevel) throws Exception {
 
-		// TODO: implements a SQL alternative method
+		if (this.entityCache != null && this.entityCache.scanIdsByTimeIndex != null) {
+			int timeIndex = (int) (time / TIME_INDEX_WIDTH);
 
-		int timeIndex = (int) (time / TIME_INDEX_WIDTH);
+			ScanHeader nearestScanHeader = null;
+			Map<Integer, ArrayList<Integer>> scanIdsByTimeIndex = this.getScanIdsByTimeIndex();
 
-		ScanHeader nearestScanHeader = null;
-		HashMap<Integer, ArrayList<Integer>> scanIdsByTimeIndex = this.getScanIdsByTimeIndex();
+			for (int index = timeIndex - 1; index <= timeIndex + 1; index++) {
 
-		for (int index = timeIndex - 1; index <= timeIndex + 1; index++) {
-
-			if (scanIdsByTimeIndex.containsKey(index) == false) {
-				continue;
-			}
-
-			ArrayList<Integer> tmpScanIds = scanIdsByTimeIndex.get(index);
-			for (Integer tmpScanId : tmpScanIds) {
-
-				ScanHeader scanH = getScanHeaderById().get(tmpScanId);
-				if (scanH == null) {
-					throw new Exception("can' t retrieve scan with id =" + tmpScanId);
-				}
-
-				if (scanH.getMsLevel() != msLevel)
+				if (scanIdsByTimeIndex.containsKey(index) == false) {
 					continue;
+				}
 
-				if (nearestScanHeader == null
-						|| Math.abs(scanH.getTime() - time) < Math.abs(nearestScanHeader.getTime() - time)) {
-					nearestScanHeader = scanH;
+				ArrayList<Integer> tmpScanIds = scanIdsByTimeIndex.get(index);
+				for (Integer tmpScanId : tmpScanIds) {
+
+					ScanHeader scanH = getScanHeaderById().get(tmpScanId);
+					if (scanH == null) {
+						throw new Exception("can' t retrieve scan with id =" + tmpScanId);
+					}
+
+					if (scanH.getMsLevel() != msLevel)
+						continue;
+
+					if ( nearestScanHeader == null || 
+						 Math.abs(scanH.getTime() - time) < Math.abs(nearestScanHeader.getTime() - time) ) {
+						nearestScanHeader = scanH;
+					}
 				}
 			}
+
+			return nearestScanHeader;
+		} else {
+			String queryStr = "SELECT id FROM spectrum WHERE ms_level = ? ORDER BY abs(spectrum.time - ?) ASC limit 1";
+			int scanId = new SQLiteQuery(connection, queryStr)
+				.bind(1,msLevel)
+				.bind(2,time)
+				.extractSingleInt();
+			
+			return this.getScanHeader(scanId);
 		}
 
-		return nearestScanHeader;
 	}
+  
+	/**
+	 * Gets the scan ids by time index.
+	 * 
+	 * @return hashmap of key time index value array of scanIds
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	protected Map<Integer, ArrayList<Integer>> getScanIdsByTimeIndex() throws SQLiteException {
 
+		if (this.entityCache != null && this.entityCache.scanIdsByTimeIndex != null) {
+			return this.entityCache.scanIdsByTimeIndex;
+		} else {
+			HashMap<Integer, ArrayList<Integer>> scanIdsByTimeIndex = new HashMap<Integer, ArrayList<Integer>>();
+			ScanHeader[] scanHeaders = this.getScanHeaders();
+
+			for (ScanHeader scanH : scanHeaders) {
+				int timeIndex = (int) (scanH.getTime() / TIME_INDEX_WIDTH);
+
+				if (scanIdsByTimeIndex.get(timeIndex) == null)
+					scanIdsByTimeIndex.put(timeIndex, new ArrayList<Integer>());
+
+				scanIdsByTimeIndex.get(timeIndex).add(scanH.getId());
+			}
+			
+			if (this.entityCache != null)
+				this.entityCache.scanIdsByTimeIndex = scanIdsByTimeIndex;
+			
+			return scanIdsByTimeIndex;
+		}
+	}
+	
 	/**
 	 * Gets the scan ids for time range.
 	 * 
@@ -293,7 +289,10 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 
 		// Retrieve the corresponding run slices
 		SQLiteStatement stmt = connection.prepare(
-				"SELECT id FROM scan WHERE ms_level = ? AND time >= ? AND time <= ?", true);
+			"SELECT id FROM scan WHERE ms_level = ? AND time >= ? AND time <= ?",
+			true
+		);
+		
 		stmt.bind(1, msLevel);
 		stmt.bind(2, minRT);
 		stmt.bind(3, maxRT);
@@ -308,27 +307,5 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 
 		return scanIds.toArray(new Integer[scanIds.size()]);
 	}
-
-	/**
-	 * same as getScanIdsForTimeRange but without requiring sqlite statement.
-	 * 
-	 * @param minRT
-	 *            the min rt
-	 * @param maxRT
-	 *            the max rt
-	 * @param msLevel
-	 *            the ms level
-	 * @return array of integers corresponding to the ids of matching scan
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	/*
-	 * public Integer[] getLazyScanIdsForTimeRange(float minRT, float maxRT, int msLevel) throws
-	 * SQLiteException { int idmin = this.getScanHeaderForTime(minRT, msLevel).getId(); int idmax =
-	 * this.getScanHeaderForTime(maxRT, msLevel).getId(); List<Integer> l = new ArrayList<Integer>();
-	 * 
-	 * for (int i = idmin; i <= idmax; ++i) { if (this.getScanHeader(i).getMsLevel() == msLevel) l.add(i); }
-	 * return l.toArray(new Integer[l.size()]); }
-	 */
 
 }

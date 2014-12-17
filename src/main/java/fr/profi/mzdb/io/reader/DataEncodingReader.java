@@ -1,18 +1,20 @@
 package fr.profi.mzdb.io.reader;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.almworks.sqlite4java.SQLiteException;
 
 import fr.profi.mzdb.MzDbReader;
+import fr.profi.mzdb.db.model.params.ParamTree;
+import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.table.DataEncodingTable;
 import fr.profi.mzdb.db.table.SpectrumTable;
 import fr.profi.mzdb.model.ByteOrder;
 import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.DataMode;
 import fr.profi.mzdb.model.PeakEncoding;
-import fr.profi.mzdb.model.ScanHeader;
 import fr.profi.mzdb.utils.sqlite.ISQLiteRecordExtraction;
 import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
 import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
@@ -49,7 +51,7 @@ public class DataEncodingReader extends AbstractMzDbReaderHelper {
 
 			// Extract record values
 			int id = record.columnInt(DataEncodingTable.ID);
-			String dmAsStr = record.columnString(DataEncodingTable.MODE);// "signal_representation");
+			String dmAsStr = record.columnString(DataEncodingTable.MODE);
 			String compression = record.columnString(DataEncodingTable.COMPRESSION);
 			String byteOrderAsStr = record.columnString(DataEncodingTable.BYTE_ORDER);
 
@@ -65,10 +67,29 @@ public class DataEncodingReader extends AbstractMzDbReaderHelper {
 				bo = ByteOrder.BIG_ENDIAN;
 			else
 				bo = ByteOrder.LITTLE_ENDIAN;
+			
+			// Parse param tree
+			String paramTreeAsStr = record.columnString(SpectrumTable.PARAM_TREE);
+			ParamTree paramTree = ParamTreeParser.parseParamTree(paramTreeAsStr);		
+			
+			// FIXME: the two CV params may have the same AC => it could be conflicting...
+			List<CVParam> cvParams = paramTree.getCVParams();
+			CVParam mzEncoding = cvParams.get(0);
+			CVParam intEncoding = cvParams.get(1);
+			
+			PeakEncoding peakEnc = null;
+			if( mzEncoding.getValue().equals("32") ) {
+				peakEnc = PeakEncoding.LOW_RES_PEAK;
+			} else {				
+				if( intEncoding.getValue().equals("32") ) {
+					peakEnc = PeakEncoding.HIGH_RES_PEAK;
+				} else {					
+					peakEnc = PeakEncoding.NO_LOSS_PEAK;
+				}
+			}
 
 			// Return data encoding object
-			return new DataEncoding(id, dm, null, compression, bo);
-
+			return new DataEncoding(id, dm, peakEnc, compression, bo);
 		}
 
 	};
@@ -148,7 +169,6 @@ public class DataEncodingReader extends AbstractMzDbReaderHelper {
 		} else {
 
 			Map<Integer, DataEncoding> dataEncodingById = this.getDataEncodingById();
-			Map<Integer, ScanHeader> scanHeaderById = mzDbReader.getScanHeaderById();
 
 			// Retrieve encoding PK for the given scan id
 			String queryStr = "SELECT id, data_encoding_id FROM spectrum";
@@ -160,12 +180,10 @@ public class DataEncodingReader extends AbstractMzDbReaderHelper {
 
 				int scanId = record.columnInt(SpectrumTable.ID);
 				int scanDataEncodingId = record.columnInt(SpectrumTable.DATA_ENCODING_ID);
+				
+				DataEncoding dataEnc = dataEncodingById.get(scanDataEncodingId);
 
-				// TODO: remove the clone call and the getScanHeaderById call when
-				// param_tree is fixed
-				DataEncoding dataEnc = dataEncodingById.get(scanDataEncodingId).clone();
-				ScanHeader h = scanHeaderById.get(scanId);
-
+				/*
 				// Looking for the appropriate peak encoding
 				// FIXME: retrieve the resolution from the data encoding param tree
 				PeakEncoding pe = (h.isHighResolution()) ? PeakEncoding.HIGH_RES_PEAK
@@ -174,7 +192,7 @@ public class DataEncodingReader extends AbstractMzDbReaderHelper {
 					pe = PeakEncoding.NO_LOSS_PEAK;
 
 				// Setting new peak encoding was set to null before
-				dataEnc.setPeakEncoding(pe);
+				dataEnc.setPeakEncoding(pe);*/
 
 				dataEncodingByScanId.put(scanId, dataEnc);
 			}

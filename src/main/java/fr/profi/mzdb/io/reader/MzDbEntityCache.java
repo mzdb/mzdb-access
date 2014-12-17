@@ -1,5 +1,6 @@
 package fr.profi.mzdb.io.reader;
 
+import java.util.ArrayList;
 import java.util.Map;
 
 import fr.profi.mzdb.model.DataEncoding;
@@ -15,10 +16,10 @@ public class MzDbEntityCache {
 	protected ScanHeader[] scanHeaders = null;
 
 	protected Map<Integer, ScanHeader> scanHeaderById = null;
-
-	protected Map<Float, Integer> scanIdByTime = null;
-
-	// protected HashMap<Integer, ArrayList<Integer>> _scanIdsByTimeIndex = null;
+	
+	protected Map<Integer, Float> scanTimeById = null;
+	
+	protected Map<Integer, ArrayList<Integer>> scanIdsByTimeIndex = null;
 
 	protected Map<Integer, DataEncoding> dataEncodingById = null;
 
@@ -36,8 +37,8 @@ public class MzDbEntityCache {
 		return scanHeaderById;
 	}
 
-	public Map<Float, Integer> getScanIdByTime() {
-		return scanIdByTime;
+	public Map<Integer, Float> getScanTimeById() {
+		return scanTimeById;
 	}
 
 	public Map<Integer, DataEncoding> getDataEncodingByScanId() {

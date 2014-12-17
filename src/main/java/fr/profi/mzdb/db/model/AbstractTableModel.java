@@ -10,7 +10,6 @@ import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.db.model.params.param.UserText;
-import fr.profi.mzdb.model.ScanHeader;
 import fr.profi.mzdb.utils.misc.AbstractInMemoryIdGen;
 
 // TODO: Auto-generated Javadoc
@@ -69,12 +68,14 @@ public abstract class AbstractTableModel extends AbstractInMemoryIdGen implement
 	 * @return the param tree
 	 */
 	public ParamTree getParamTree(MzDbReader mzDbReader) {
-	  if (! this.hasParamTree()){}
-	    try {
-	      this.loadParamTree(mzDbReader);
-	    } catch (SQLiteException e) {
-	      System.out.println(e.getMessage());
-	    }
+		if (!this.hasParamTree()) {
+			try {
+				this.loadParamTree(mzDbReader);
+			} catch (SQLiteException e) {
+				System.out.println(e.getMessage());
+			}
+		}
+
 		return paramTree;
 	}
 
@@ -87,14 +88,14 @@ public abstract class AbstractTableModel extends AbstractInMemoryIdGen implement
 	public void setParamTree(ParamTree paramTree) {
 		this.paramTree = paramTree;
 	}
-	
-  /**
-   * Loads the param tree.
-   * 
-   * @param paramTree
-   *            the new param tree
-   */
-  abstract public void loadParamTree(MzDbReader mzDbReader) throws SQLiteException;
+
+	/**
+	 * Loads the param tree.
+	 * 
+	 * @param paramTree
+	 *            the new param tree
+	 */
+	abstract public void loadParamTree(MzDbReader mzDbReader) throws SQLiteException;
 
 	/*
 	 * (non-Javadoc)
@@ -122,9 +123,9 @@ public abstract class AbstractTableModel extends AbstractInMemoryIdGen implement
 	public UserParam getUserParam(String name) {
 		return this.paramTree.getUserParam(name);
 	}
-	
+
 	public List<UserText> getUserTexts() {
-	   return this.paramTree.getUserTexts();
+		return this.paramTree.getUserTexts();
 	}
 
 }

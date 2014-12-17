@@ -45,38 +45,47 @@ public class InstrumentConfigReader {
 	 *             the sQ lite exception
 	 */
 	public List<InstrumentConfiguration> getInstrumentConfigs() throws SQLiteException {
-	   List<InstrumentConfiguration> l = new ArrayList<InstrumentConfiguration>();
-		 SQLiteRecordIterator it = new SQLiteQuery(connection, "select * from instrument_configuration").getRecords();
-		 while( it.hasNext()) {
-       SQLiteRecord r =  it.next(); 
-		   int id = r.columnInt(InstrumentConfigurationTable.ID);
-       String name = r.columnString(InstrumentConfigurationTable.NAME);
-       int softwareId = r.columnInt(InstrumentConfigurationTable.SOFTWARE_ID);
-       String paramTreeAsStr = r.columnString(InstrumentConfigurationTable.PARAM_TREE);
-       String componentListAsStr = r.columnString(InstrumentConfigurationTable.COMPONENT_LIST);
-       InstrumentConfiguration insConf = new InstrumentConfiguration(id, name, softwareId, 
-           ParamTreeParser.parseParamTree(paramTreeAsStr), ParamTreeParser.parseComponentList(componentListAsStr));
-       l.add(insConf);
-		 }
-		 return l;
+		
+		List<InstrumentConfiguration> l = new ArrayList<InstrumentConfiguration>();
+		SQLiteRecordIterator it = new SQLiteQuery(connection, "select * from instrument_configuration").getRecords();
+		
+		while (it.hasNext()) {
+			SQLiteRecord r = it.next();
+			
+			int id = r.columnInt(InstrumentConfigurationTable.ID);
+			String name = r.columnString(InstrumentConfigurationTable.NAME);
+			int softwareId = r.columnInt(InstrumentConfigurationTable.SOFTWARE_ID);
+			String paramTreeAsStr = r.columnString(InstrumentConfigurationTable.PARAM_TREE);
+			String componentListAsStr = r.columnString(InstrumentConfigurationTable.COMPONENT_LIST);
+			
+			InstrumentConfiguration insConf = new InstrumentConfiguration(id, name, softwareId,
+					ParamTreeParser.parseParamTree(paramTreeAsStr),
+					ParamTreeParser.parseComponentList(componentListAsStr));
+			
+			l.add(insConf);
+		}
+		return l;
 	}
-	
-	
+
 	public InstrumentConfiguration getInstrumentConfig(int id) throws SQLiteException {
-    return new SQLiteQuery(connection, "select * from instrument_configuration where id = ?").bind(1, id)
-        .extractRecord(new ISQLiteRecordExtraction<InstrumentConfiguration>() {
-                public InstrumentConfiguration extract(SQLiteRecord r) throws SQLiteException {
-                        int id = r.columnInt(InstrumentConfigurationTable.ID);
-                        String name = r.columnString(InstrumentConfigurationTable.NAME);
-                        int softwareId = r.columnInt(InstrumentConfigurationTable.SOFTWARE_ID);
-                        String paramTreeAsStr = r.columnString(InstrumentConfigurationTable.PARAM_TREE);
-                        String insConfAsStr = r.columnString(InstrumentConfigurationTable.COMPONENT_LIST);
-                        return new InstrumentConfiguration(id, name, softwareId, ParamTreeParser.parseParamTree(paramTreeAsStr),
-                                        ParamTreeParser.parseComponentList(insConfAsStr));
-
-                }
-        });
-
+		
+		return new SQLiteQuery(connection, "select * from instrument_configuration where id = ?").bind(1, id)
+				
+				.extractRecord(new ISQLiteRecordExtraction<InstrumentConfiguration>() {
+					
+					public InstrumentConfiguration extract(SQLiteRecord r) throws SQLiteException {
+						
+						int id = r.columnInt(InstrumentConfigurationTable.ID);
+						String name = r.columnString(InstrumentConfigurationTable.NAME);
+						int softwareId = r.columnInt(InstrumentConfigurationTable.SOFTWARE_ID);
+						String paramTreeAsStr = r.columnString(InstrumentConfigurationTable.PARAM_TREE);
+						String insConfAsStr = r.columnString(InstrumentConfigurationTable.COMPONENT_LIST);
+						
+						return new InstrumentConfiguration(id, name, softwareId, ParamTreeParser
+								.parseParamTree(paramTreeAsStr), ParamTreeParser
+								.parseComponentList(insConfAsStr));
+					}
+				});
 	}
 
 }
