@@ -1,17 +1,11 @@
-/**
- * This file is part of the mzDB project
- */
 package fr.profi.mzdb.io.reader.bb;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.ByteBuffer;
 import java.util.Map;
 
 import fr.profi.mzdb.model.DataEncoding;
-import fr.profi.mzdb.model.DataMode;
-import fr.profi.mzdb.model.Peak;
 import fr.profi.mzdb.model.ScanData;
 import fr.profi.mzdb.model.ScanHeader;
 import fr.profi.mzdb.model.ScanSlice;
@@ -35,11 +29,18 @@ public class StreamReader extends AbstractBlobReader {
 	 * @param s
 	 *            inputStream
 	 * @see AbstractBlobReader
-	 * @see AbstractBlobReader#_dataEncodings
+	 * @see AbstractBlobReader#_dataEncodingByScanId
 	 */
-	public StreamReader(Map<Integer, ScanHeader> headers, Map<Integer, DataEncoding> dataEnc, InputStream s) {
-		super(headers, dataEnc);
-		_stream = s;
+	public StreamReader(
+		InputStream inputStream,
+		int firstScanId,
+		int lastScanId,
+		Map<Integer, ScanHeader> scanHeaderById,
+		Map<Integer, DataEncoding> dataEncodingByScanId
+	) {
+		super(firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId);
+		
+		this._stream = inputStream;
 	}
 
 	/**
@@ -49,62 +50,68 @@ public class StreamReader extends AbstractBlobReader {
 		try {
 			_stream.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error("IOException has been catched while closing stream", e);
 		}
 	}
 
 	/**
-	 * @see IBlobReader#nbScans()
+	 * @see IBlobReader#getScansCount()
 	 */
-	public int nbScans() {
-		throw new UnsupportedOperationException("Unsupported Operation");
+	public int getScansCount() {
+		return _scansCount;
 	}
 
 	/**
-	 * @see IBlobReader#blobSize()
+	 * @see IBlobReader#getBlobSize()
 	 */
-	public int blobSize() {
-		int c = 0;
+	public int getBlobSize() {
+		throw new UnsupportedOperationException("can't compute the size of a stream");
+		
+		/*int c = 0;
 		try {
 			while (_stream.read() != 0)
 				c++;
 		} catch (IOException e) {
+			logger.error("IOException catched while calculating the size of the stream", e);
 			e.printStackTrace();
 		}
-		return c;
+		return c;*/
 	}
 
 	/**
 	 * @see IBlobReader#idOfScanAt(int)
 	 */
-	public int idOfScanAt(int i) {
-		int lastId = 0;
+	public int getScanIdAt(int idx) {
+		
+		int lastScanId = 0;
 		try {
-			for (int j = 1; j <= i; j++) {
-				byte[] b = new byte[4];
-				_stream.read(b);
-				lastId = BytesUtils.bytesToInt(b, 0);
+			for (int j = 0; j < idx; j++) {
+				
+				byte[] scanIdBytes = new byte[4];
+				_stream.read(scanIdBytes);
+				lastScanId = BytesUtils.bytesToInt(scanIdBytes, 0);
 
-				byte[] bytes = new byte[4];
-				_stream.read(bytes);
-				int nbPeaks = BytesUtils.bytesToInt(bytes, 0);
-				DataEncoding de = this._dataEncodings.get(lastId);
-				int structSize = de.getPeakEncoding().getValue();
-				if (de.getMode() == DataMode.FITTED)
-					structSize += 8;
-				_stream.skip(nbPeaks * structSize);
+				byte[] peaksCountBytes = new byte[4];
+				_stream.read(peaksCountBytes);
+				int peaksCount = BytesUtils.bytesToInt(peaksCountBytes, 0);
+				
+				DataEncoding de = this._dataEncodingByScanId.get(lastScanId);
+				this.checkDataEncodingIsNotNull(de, lastScanId);
+				
+				_stream.skip(peaksCount * de.getPeakStructSize());
 			}
 			_stream.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error("IOException has been catched while closing stream", e);
 		}
-		return lastId;
+		
+		return lastScanId;
 	}
 
 	/**
 	 * @see IBlobReader#nbPeaksOfScanAt(int)
 	 */
-	public int nbPeaksOfScanAt(int i) {
+	/*public int nbPeaksOfScanAt(int i) {
 		int lastNbPeaks = 0;
 		try {
 			for (int j = 1; j <= i; j++) {
@@ -115,7 +122,7 @@ public class StreamReader extends AbstractBlobReader {
 				_stream.read(bytes);
 				int nbPeaks = BytesUtils.bytesToInt(bytes, 0);
 				lastNbPeaks = nbPeaks;
-				DataEncoding de = this._dataEncodings.get(id);
+				DataEncoding de = this._dataEncodingByScanId.get(id);
 				int structSize = de.getPeakEncoding().getValue();
 				if (de.getMode() == DataMode.FITTED)
 					structSize += 8;
@@ -126,12 +133,12 @@ public class StreamReader extends AbstractBlobReader {
 			e.printStackTrace();
 		}
 		return lastNbPeaks;
-	}
+	}*/
 
 	/**
 	 * @see IBlobReader#peakAt(int, int)
 	 */
-	public Peak peakAt(int idx, int pos) {
+	/*public Peak peakAt(int idx, int pos) {
 		if (idx > _nbScans || idx < 1) {
 			throw new IndexOutOfBoundsException("peakAt: Index out of bound start counting at 1");
 		}
@@ -142,31 +149,31 @@ public class StreamReader extends AbstractBlobReader {
 		}
 		Peak[] peaks = peaksOfScanAt(idx);
 		return peaks[pos];
-	}
+	}*/
 
 	/**
 	 * @see IBlobReader#scanSliceOfScanAt(int)
 	 */
-	public ScanSlice scanSliceOfScanAt(int idx) {
+	public ScanSlice readScanSliceAt(int idx) {
+		
 		byte[] peaksBytes = null;
-		int id = 0, structSize = 0, nbPeaks = 0;
+		int scanId = 0, peaksCount = 0;
 		DataEncoding de = null;
+		
 		try {
-			for (int j = 1; j <= idx; j++) {
-				byte[] b = new byte[4];
-				_stream.read(b);
-				id = BytesUtils.bytesToInt(b, 0);
+			for (int j = 0; j < idx; j++) {
+				
+				byte[] scanIdBytes = new byte[4];
+				_stream.read(scanIdBytes);
+				scanId = BytesUtils.bytesToInt(scanIdBytes, 0);
 
-				byte[] bytes = new byte[4];
-				_stream.read(bytes);
-				nbPeaks = BytesUtils.bytesToInt(bytes, 0);
+				byte[] peaksCountBytes = new byte[4];
+				_stream.read(peaksCountBytes);
+				peaksCount = BytesUtils.bytesToInt(peaksCountBytes, 0);
 
-				de = this._dataEncodings.get(id);
-				structSize = de.getPeakEncoding().getValue();
-				if (de.getMode() == DataMode.FITTED)
-					structSize += 8;
+				de = this._dataEncodingByScanId.get(scanId);
 
-				byte[] pb = new byte[nbPeaks * structSize];
+				byte[] pb = new byte[peaksCount * de.getPeakStructSize()];
 				_stream.read(pb);
 				peaksBytes = pb;
 			}
@@ -179,16 +186,15 @@ public class StreamReader extends AbstractBlobReader {
 			return null;
 		}
 
-		BlobData blobData = readBlob(peaksBytes, peaksBytes.length, structSize, de);
-		ScanSlice s = new ScanSlice(null, new ScanData(blobData.mz, blobData.intensity, blobData.lwhm,
-				blobData.rwhm));
-		return s;
+		ScanData scanSliceData = this.readScanSliceData(ByteBuffer.wrap(peaksBytes), 0, peaksBytes.length, de);
+		
+		return new ScanSlice(_scanHeaderById.get(scanId), scanSliceData);
 	}
 
 	/**
 	 * @see IBlobReader#asScanSlicesArray(int, int)
 	 */
-	public ScanSlice[] asScanSlicesArray(int firstScanId, int runSliceId) {
+	/*public ScanSlice[] asScanSlicesArray(int firstScanId, int runSliceId) {
 		List<ScanSlice> sl = new ArrayList<ScanSlice>();
 		int i = 1;
 		while (true) {
@@ -206,10 +212,10 @@ public class StreamReader extends AbstractBlobReader {
 			e.printStackTrace();
 		}
 		return sl.toArray(new ScanSlice[sl.size()]);
-	}
+	}*/
 
-	protected void _buildMapPositions() {
+	/*protected void _indexScanSlices() {
 
-	}
+	}*/
 
 }

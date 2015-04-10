@@ -6,6 +6,12 @@ import javax.xml.bind.annotation.XmlAttribute;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class UserParam {
+	
+	@XmlAttribute
+	protected String cvRef;
+
+	@XmlAttribute
+	protected String accession;
 
 	@XmlAttribute
 	protected String name;
@@ -15,12 +21,14 @@ public class UserParam {
 
 	@XmlAttribute
 	protected String type;// ="xsd:float"/>;
+	
+	public String getCvRef() {
+		return cvRef;
+	}
 
-	@XmlAttribute
-	protected String cvRef = "MS";
-
-	@XmlAttribute
-	protected String accession = "";
+	public String getAccession() {
+		return accession;
+	}
 
 	public String getName() {
 		return name;
@@ -34,12 +42,24 @@ public class UserParam {
 		return type;
 	}
 
-	public String getCvRef() {
-		return cvRef;
+	public void setCvRef(String cvRef) {
+		this.cvRef = cvRef;
 	}
 
-	public String getAccession() {
-		return accession;
+	public void setAccession(String accession) {
+		this.accession = accession;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public void setValue(String value) {
+		this.value = value;
+	}
+
+	public void setType(String type) {
+		this.type = type;
 	}
 
 }

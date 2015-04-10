@@ -80,10 +80,10 @@ public class DataEncodingReader extends AbstractMzDbReaderHelper {
 			PeakEncoding peakEnc = null;
 			if( mzEncoding.getValue().equals("32") ) {
 				peakEnc = PeakEncoding.LOW_RES_PEAK;
-			} else {				
+			} else {
 				if( intEncoding.getValue().equals("32") ) {
 					peakEnc = PeakEncoding.HIGH_RES_PEAK;
-				} else {					
+				} else {
 					peakEnc = PeakEncoding.NO_LOSS_PEAK;
 				}
 			}

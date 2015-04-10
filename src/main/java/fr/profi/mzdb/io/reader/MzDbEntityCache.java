@@ -13,13 +13,19 @@ import fr.profi.mzdb.model.ScanHeader;
  */
 public class MzDbEntityCache {
 
-	protected ScanHeader[] scanHeaders = null;
+	protected ScanHeader[] ms1ScanHeaders = null;
 
-	protected Map<Integer, ScanHeader> scanHeaderById = null;
+	protected Map<Integer, ScanHeader> ms1ScanHeaderById = null;
+	
+	protected ScanHeader[] ms2ScanHeaders = null;
+
+	protected Map<Integer, ScanHeader> ms2ScanHeaderById = null;
 	
 	protected Map<Integer, Float> scanTimeById = null;
 	
-	protected Map<Integer, ArrayList<Integer>> scanIdsByTimeIndex = null;
+	protected Map<Integer, ArrayList<Integer>> ms1ScanIdsByTimeIndex = null;
+	
+	protected Map<Integer, ArrayList<Integer>> ms2ScanIdsByTimeIndex = null;
 
 	protected Map<Integer, DataEncoding> dataEncodingById = null;
 
@@ -29,12 +35,20 @@ public class MzDbEntityCache {
 
 	protected Map<Integer, RunSliceHeader> runSliceHeaderById = null;
 
-	public ScanHeader[] getScanHeaders() {
-		return scanHeaders;
+	public ScanHeader[] getMs1ScanHeaders() {
+		return ms1ScanHeaders;
 	}
 
-	public Map<Integer, ScanHeader> getScanHeaderById() {
-		return scanHeaderById;
+	public Map<Integer, ScanHeader> getMs1ScanHeaderById() {
+		return ms1ScanHeaderById;
+	}
+	
+	public ScanHeader[] getMs2ScanHeaders() {
+		return ms2ScanHeaders;
+	}
+
+	public Map<Integer, ScanHeader> getMs2ScanHeaderById() {
+		return ms2ScanHeaderById;
 	}
 
 	public Map<Integer, Float> getScanTimeById() {

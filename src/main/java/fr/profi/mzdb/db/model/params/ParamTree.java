@@ -18,10 +18,7 @@ import fr.profi.mzdb.db.model.params.param.UserText;
 @XmlRootElement(name = "params")
 public class ParamTree extends AbstractParamTree {
 
-	/**
-	 * necessary for jackson.
-	 */
-	protected ParamTree() {
+	public ParamTree() {
 		super();
 	}
 

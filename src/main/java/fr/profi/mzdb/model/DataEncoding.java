@@ -26,6 +26,9 @@ public class DataEncoding implements Cloneable {
 
 	/** The byte order. */
 	protected final ByteOrder byteOrder;
+	
+	/** The byte order. */
+	protected final int peakStructSize;
 
 	/**
 	 * Instantiates a new data encoding.
@@ -41,14 +44,19 @@ public class DataEncoding implements Cloneable {
 	 * @param byteOrder
 	 *            the byte order
 	 */
-	public DataEncoding(int id, DataMode mode, PeakEncoding peakEncoding, String compression,
-			ByteOrder byteOrder) {
+	public DataEncoding(int id, DataMode mode, PeakEncoding peakEncoding, String compression, ByteOrder byteOrder) {
 		super();
 		this.id = id;
 		this.mode = mode;
 		this.peakEncoding = peakEncoding;
 		this.compression = compression;
 		this.byteOrder = byteOrder;
+		
+		int peakBytesSize = this.getPeakEncoding().getValue();
+		if (this.getMode() == DataMode.FITTED)
+			peakBytesSize += 8; // add 2 floats (left hwhm and right hwhm)
+		
+		this.peakStructSize = peakBytesSize;
 	}
 
 	/**
@@ -104,6 +112,10 @@ public class DataEncoding implements Cloneable {
 	 */
 	public ByteOrder getByteOrder() {
 		return byteOrder;
+	}
+	
+	public int getPeakStructSize() {
+		return peakStructSize;
 	}
 
 	/*

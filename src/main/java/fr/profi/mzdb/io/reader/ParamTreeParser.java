@@ -1,16 +1,17 @@
 package fr.profi.mzdb.io.reader;
 
-import java.io.StringReader;
-
 import javax.xml.bind.JAXBException;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.sax.SAXSource;
 
-import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.db.model.params.ComponentList;
 import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.model.params.Precursor;
 import fr.profi.mzdb.db.model.params.ScanList;
+import fr.profi.mzdb.utils.jaxb.XercesSAXParser;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -27,12 +28,17 @@ public class ParamTreeParser {
 	 * @return the param tree
 	 */
 	synchronized public static ParamTree parseParamTree(String paramTreeAsStr) {
-
+		
 		ParamTree paramTree = null;
 		
 		try {
-			paramTree = (ParamTree) MzDbReader.paramTreeUnmarshaller.unmarshal(new StringReader(paramTreeAsStr));
+			SAXSource source = XercesSAXParser.getSAXSource( paramTreeAsStr );
+			paramTree = (ParamTree) MzDbReader.paramTreeUnmarshaller.unmarshal(source);
 		} catch (JAXBException e) {
+			e.printStackTrace();
+		} catch (ParserConfigurationException e) {
+			e.printStackTrace();
+		} catch (SAXException e) {
 			e.printStackTrace();
 		}
 		
@@ -44,8 +50,13 @@ public class ParamTreeParser {
 		ScanList scanList = null;
 		
 		try {
-			scanList = (ScanList) MzDbReader.scanListUnmarshaller.unmarshal(new StringReader(scanListAsStr));
+			SAXSource source = XercesSAXParser.getSAXSource( scanListAsStr );
+			scanList = (ScanList) MzDbReader.scanListUnmarshaller.unmarshal(source);
 		} catch (JAXBException e) {
+			e.printStackTrace();
+		} catch (ParserConfigurationException e) {
+			e.printStackTrace();
+		} catch (SAXException e) {
 			e.printStackTrace();
 		}
 		
@@ -56,8 +67,13 @@ public class ParamTreeParser {
 		Precursor prec = null;
 		
 		try {
-			prec = (Precursor) MzDbReader.precursorUnmarshaller.unmarshal(new StringReader(precursorAsStr));
+			SAXSource source = XercesSAXParser.getSAXSource( precursorAsStr );
+			prec = (Precursor) MzDbReader.precursorUnmarshaller.unmarshal(source);
 		} catch (JAXBException e) {
+			e.printStackTrace();
+		} catch (ParserConfigurationException e) {
+			e.printStackTrace();
+		} catch (SAXException e) {
 			e.printStackTrace();
 		}
 
@@ -76,9 +92,13 @@ public class ParamTreeParser {
 		ComponentList paramTree = null;
 		
 		try {
-			paramTree = (ComponentList) MzDbReader.instrumentConfigUnmarshaller.unmarshal(new InputSource(paramTreeAsStr));
+			SAXSource source = XercesSAXParser.getSAXSource( paramTreeAsStr );
+			paramTree = (ComponentList) MzDbReader.instrumentConfigUnmarshaller.unmarshal(source);
 		} catch (JAXBException e) {
-			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ParserConfigurationException e) {
+			e.printStackTrace();
+		} catch (SAXException e) {
 			e.printStackTrace();
 		}
 		

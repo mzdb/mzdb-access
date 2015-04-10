@@ -1,14 +1,13 @@
 package fr.profi.mzdb.io.reader.bb;
 
-import java.util.HashMap;
+import java.io.StreamCorruptedException;
+import java.nio.ByteBuffer;
 import java.util.Map;
 
 import com.almworks.sqlite4java.SQLiteBlob;
 import com.almworks.sqlite4java.SQLiteException;
 
 import fr.profi.mzdb.model.DataEncoding;
-import fr.profi.mzdb.model.DataMode;
-import fr.profi.mzdb.model.Peak;
 import fr.profi.mzdb.model.ScanData;
 import fr.profi.mzdb.model.ScanHeader;
 import fr.profi.mzdb.model.ScanSlice;
@@ -28,18 +27,22 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 
 	/**
 	 * Constructor
+	 * @throws StreamCorruptedException 
 	 * 
-	 * @param dataEnc
-	 *            map <ScanId, DataEncoding>
-	 * @param r
-	 *            the SQliteBlob object
 	 * @see SQLiteBlob
 	 * @see DataEncoding
 	 */
-	public SQLiteBlobReader(Map<Integer, ScanHeader> headers, Map<Integer, DataEncoding> dataEnc, SQLiteBlob r) {
-		super(headers, dataEnc);
-		_blob = r;
-		_buildMapPositions();
+	public SQLiteBlobReader(
+		SQLiteBlob blob,
+		int firstScanId,
+		int lastScanId,
+		Map<Integer, ScanHeader> scanHeaderById,
+		Map<Integer, DataEncoding> dataEncodingByScanId
+	) throws StreamCorruptedException {
+		super(firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId);
+		
+		this._blob = blob;
+		this._indexScanSlices();
 	}
 
 	/**
@@ -50,103 +53,103 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 	}
 
 	/**
-	 * @see IBlobReader#blobSize()
+	 * @see IBlobReader#getBlobSize()
 	 */
-	public int blobSize() {
+	public int getBlobSize() {
 		try {
 			return _blob.getSize();
 		} catch (SQLiteException e) {
-			e.printStackTrace();
+			logger.error("can't get SQLiteBlob size",e);
 			return 0;
 		}
 	}
 
 	/**
-	 * @see IBlobReader#nbScans()
+	 * @see IBlobReader#getScansCount()
 	 */
-	public int nbScans() {
-		return _nbScans;
+	public int getScansCount() {
+		return _scansCount;
 	}
 
 	/**
+	 * @throws StreamCorruptedException 
 	 * @see AbstractBlobReader
 	 * @see AbstractBlobReader#_buildMapPositions()
 	 */
-	protected void _buildMapPositions() {
+	// TODO: factorize this code with the one from BytesReader
+	protected void _indexScanSlices() throws StreamCorruptedException {
 
-		int size = blobSize();
-		int count = 1;
-		int i = 0;
-		_startPositions = new HashMap<Integer, Integer>();
-		_nbPeaks = new HashMap<Integer, Integer>();
-		while (i < size) {
-			_startPositions.put(count, i);
-			byte[] buffer_ = new byte[4];
-			try {
-				_blob.read(i, buffer_, 0, 4);
-			} catch (SQLiteException e) {
-				e.printStackTrace();
-			} // read 4 bytes
+		int size = getBlobSize();
+		int scanSliceIdx = 1;
+		int byteIdx = 0;
+		
+		this._scanSliceStartPositions = new int[_scansCount];
+		this._peaksCounts = new int[_scansCount];
+		
+		while (byteIdx < size) {
+			
+			// Retrieve the scan id
+			int scanId = _getIntFromBlob(_blob, byteIdx);
+			_scanSliceStartPositions[scanSliceIdx] = byteIdx;
+			
+			// Skip the scan id bytes
+			byteIdx += 4;
 
-			i += 4; // pass rt
-			int id = BytesUtils.bytesToInt(buffer_, 0);
+			// Retrieve the number of peaks
+			int peaksCount = _getIntFromBlob(_blob, byteIdx);
+			_peaksCounts[scanSliceIdx] = peaksCount;
 
-			byte[] buffer = new byte[4];
+			// Skip the peaksCount bytes
+			byteIdx += 4;
 
-			try {
-				_blob.read(i, buffer, 0, 4);
-			} catch (SQLiteException e) {
-				e.printStackTrace();
-			} // read 4 bytes
-
-			int nbPeaks = BytesUtils.bytesToInt(buffer, 0); // nbPeaks
-			_nbPeaks.put(count, nbPeaks);
-			i += 4; // skip nbPeaks
-
-			DataEncoding de = this._dataEncodings.get(id);
-			int structSize = de.getPeakEncoding().getValue();
-			if (de.getMode() == DataMode.FITTED)
-				structSize += 8; // add 2 float lwhm, rwhm
-
-			i += nbPeaks * structSize; // skip nbPeaks * size of one peak
-			count++;
+			// Retrieve the DataEncoding corresponding to this scan
+			DataEncoding de = this._dataEncodingByScanId.get(scanId);
+			this.checkDataEncodingIsNotNull(de, scanId);
+			
+			byteIdx += peaksCount * de.getPeakStructSize(); // skip nbPeaks * size of one peak
+			
+			scanSliceIdx++;
 		}
-		_nbScans = count - 1; // removing the last count++ better than doing a if
+		
 		// statement inside a while loop
 	}
 
 	/**
 	 * @see IBlobReader#idOfScanAt(int)
 	 */
-	public int idOfScanAt(int i) {
-		if (i > _nbScans || i < 1) {
-			throw new IndexOutOfBoundsException("idOfScanAt: Index out of bound exception");
-		}
-
-		byte[] b = new byte[4];
+	public int getScanIdAt(int idx) {
+		this.checkScanIndexRange(idx);
+		
+		return _getIntFromBlob(_blob, idx);
+	}
+	
+	private int _getIntFromBlob( SQLiteBlob blob, int idx ) {
+		
+		byte[] byteBuffer = new byte[4];
 
 		try {
-			_blob.read(_startPositions.get(i), b, 0, 4);
+			blob.read(idx, byteBuffer, 0, 4);
 		} catch (SQLiteException e) {
-			e.printStackTrace();
-		}
-		return BytesUtils.bytesToInt(b, 0);
+			logger.error("can't read bytes from the SQLiteBlob",e);
+		} // read 4 bytes
+
+		return BytesUtils.bytesToInt(byteBuffer, 0);
 	}
 
 	/**
 	 * @see IBlobReader#nbPeaksOfScanAt(int)
 	 */
-	public int nbPeaksOfScanAt(int i) {
+	/*public int nbPeaksOfScanAt(int i) {
 		if (i > _nbScans || i < 1) {
 			throw new IndexOutOfBoundsException("nbPeaksOfScanAt: Index out of bound, starting counting at 1");
 		}
 		return _nbPeaks.get(i);
-	}
+	}*/
 
 	/**
 	 * @see IBlobReader#peakAt(int, int)
 	 */
-	public Peak peakAt(int idx, int pos) {
+	/*public Peak peakAt(int idx, int pos) {
 		if (idx > _nbScans || idx < 1) {
 			throw new IndexOutOfBoundsException("peakAt: Index out of bound start counting at 1");
 		}
@@ -157,62 +160,57 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 		}
 		Peak[] peaks = peaksOfScanAt(idx);
 		return peaks[pos];
-	}
+	}*/
 
 	/**
 	 * @see IBlobReader#scanSliceOfScanAt(int)
 	 */
-	public ScanSlice scanSliceOfScanAt(int idx) {
+	// TODO: factorize this code with the one from BytesReader
+	public ScanSlice readScanSliceAt(int idx) {
+		this.checkScanIndexRange(idx);
 
-		if (idx > _nbScans || idx < 1)
-			throw new IndexOutOfBoundsException("scanSliceOfScanAt: Index out of bound, start counting at 1");
+		int scanSliceStartPos = _scanSliceStartPositions[idx];
+		int scanId = this._getIntFromBlob(_blob, scanSliceStartPos);
+		
+		// Determine peak size in bytes
+		DataEncoding de = this._dataEncodingByScanId.get(scanId);
 
-		int pos = _startPositions.get(idx);
-		int nbPeaks = _nbPeaks.get(idx);
+		// Determine peaks bytes length
+		int peaksBytesSize = _peaksCounts[idx] * de.getPeakStructSize();
+		
+		// Skip scan id and peaks count (two integers)
+		scanSliceStartPos += 8;
 
-		byte[] buffer_ = new byte[4];
-		try {
-			_blob.read(pos, buffer_, 0, 4);
-		} catch (SQLiteException e) {
-			e.printStackTrace();
-		} // read 4 bytes
-
-		int id = BytesUtils.bytesToInt(buffer_, 0);
-
-		pos += 8;
-
-		DataEncoding de = this._dataEncodings.get(id);
-		DataMode dataMode = de.getMode();
-		int structSize = de.getPeakEncoding().getValue();
-		if (dataMode == DataMode.FITTED)
-			structSize += 8; // add 2 float lwhm, rwhm
-
-		int nbBytes = nbPeaks * structSize;
-
-		byte[] peaksBytes = new byte[nbBytes];
+		byte[] peaksBytes = new byte[peaksBytesSize];
 
 		try {
-			_blob.read(pos, peaksBytes, 0, nbBytes);
+			_blob.read(scanSliceStartPos, peaksBytes, 0, peaksBytesSize);
 		} catch (SQLiteException e) {
-			e.printStackTrace();
+			logger.error("can't read bytes from the SQLiteBlob",e);
 		}
 
-		BlobData blobData = readBlob(peaksBytes, peaksBytes.length, structSize, de);
-		ScanSlice s = new ScanSlice(null, new ScanData(blobData.mz, blobData.intensity, blobData.lwhm,
-				blobData.rwhm));
-		return s;
+		// Instantiate a new ScanData for the corresponding scan slice
+		ScanData scanSliceData = this.readScanSliceData(
+			ByteBuffer.wrap(peaksBytes), scanSliceStartPos, peaksBytesSize, de
+		);
+
+		// Instantiate a new ScanData
+		return new ScanSlice(
+			_scanHeaderById.get(scanId),
+			scanSliceData
+		);		
 	}
 
 	/**
 	 * @see IBlobReader#asScanSlicesArray(int, int)
 	 */
-	public ScanSlice[] asScanSlicesArray(int firstScanId, int runSliceId) {
-		ScanSlice[] sl = new ScanSlice[_nbScans];
-		for (int i = 1; i <= _nbScans; i++) {
+	/*public ScanSlice[] asScanSlicesArray(int firstScanId, int runSliceId) {
+		ScanSlice[] sl = new ScanSlice[_scansCount];
+		for (int i = 1; i <= _scansCount; i++) {
 			ScanSlice s = this.scanSliceOfScanAt(i);
 			s.setRunSliceId(runSliceId);
 			sl[i - 1] = s;
 		}
 		return sl;
-	}
+	}*/
 }

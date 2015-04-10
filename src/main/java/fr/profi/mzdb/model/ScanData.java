@@ -267,25 +267,13 @@ public class ScanData {
 	// If first index => return empty scan data
 	if (lastIdx == -1)
 	    return null;
-	// If out of bounds => set the last value index as the array last index
-	if (lastIdx == nbPoints)
-	    lastIdx -= 1;
 
-	// Increment the last index to have an exclusive index (needed by
-	// copyOfRange)
-	int exclusiveLastidx = lastIdx + 1;
-
-	// System.out.println("range: "+firstIdx + " " + lastIdx + " " +
-	// mzList.length);
-
-	ScanData filteredScanData = new ScanData(Arrays.copyOfRange(mzList, firstIdx, lastIdx), // exclusiveLastidx),
-		Arrays.copyOfRange(intensityList, firstIdx, lastIdx) // exclusiveLastidx)
-	);
+	ScanData filteredScanData = new ScanData(Arrays.copyOfRange(mzList, firstIdx, lastIdx), 
+		Arrays.copyOfRange(intensityList, firstIdx, lastIdx));
 
 	if (this.leftHwhmList != null) {
-	    filteredScanData.leftHwhmList = Arrays.copyOfRange(this.leftHwhmList, firstIdx, exclusiveLastidx);
-	    filteredScanData.rightHwhmList = Arrays.copyOfRange(this.rightHwhmList, firstIdx,
-		    exclusiveLastidx);
+	    filteredScanData.leftHwhmList = Arrays.copyOfRange(this.leftHwhmList, firstIdx, lastIdx);
+	    filteredScanData.rightHwhmList = Arrays.copyOfRange(this.rightHwhmList, firstIdx, lastIdx);
 	}
 
 	return filteredScanData;

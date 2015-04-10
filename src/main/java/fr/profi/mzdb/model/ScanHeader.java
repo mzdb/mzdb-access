@@ -59,7 +59,7 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
     /** The precursor charge. */
     protected final int precursorCharge; // TODO: set as Integer
 
-    // protected final float tic;
+    /** The bounding box first spectrum id. */
     protected final int bbFirstSpectrumId;
 
     /** The scan list. */

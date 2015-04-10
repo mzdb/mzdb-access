@@ -52,6 +52,18 @@ public abstract class AbstractParamTree { // implements IParamContainer
 			this.userTexts = new ArrayList<UserText>();
 		return this.userTexts;
 	}
+	
+	public void setCvParams(List<CVParam> cvParams) {
+		this.cvParams = cvParams;
+	}
+
+	public void setUserParams(List<UserParam> userParams) {
+		this.userParams = userParams;
+	}
+
+	public void setUserTexts(List<UserText> userTexts) {
+		this.userTexts = userTexts;
+	}
 
 	public UserParam getUserParam(String name) {
 

@@ -1,5 +1,6 @@
 package fr.profi.mzdb.io.reader;
 
+import java.io.StreamCorruptedException;
 import java.util.Iterator;
 
 import fr.profi.mzdb.MzDbReader;
@@ -52,8 +53,9 @@ public class RunSliceDataProvider {
 	 * @return the run slice data
 	 * @throws SQLiteException
 	 *             the sQ lite exception
+	 * @throws StreamCorruptedException 
 	 */
-	public RunSliceData getRunSliceData(int runSliceNumber) throws SQLiteException {
+	public RunSliceData getRunSliceData(int runSliceNumber) throws SQLiteException, StreamCorruptedException {
 	    RunSliceData data =  this._getNextMatchingRunSliceData(runSliceNumber);
 	    if (data == null) {
 	      System.out.println("Non optimal run slice data fetching");
