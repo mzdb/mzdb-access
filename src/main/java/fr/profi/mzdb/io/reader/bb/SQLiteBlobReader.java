@@ -2,6 +2,7 @@ package fr.profi.mzdb.io.reader.bb;
 
 import java.io.StreamCorruptedException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Map;
 
 import com.almworks.sqlite4java.SQLiteBlob;
@@ -33,16 +34,16 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 	 * @see DataEncoding
 	 */
 	public SQLiteBlobReader(
-		SQLiteBlob blob,
-		int firstScanId,
-		int lastScanId,
-		Map<Integer, ScanHeader> scanHeaderById,
-		Map<Integer, DataEncoding> dataEncodingByScanId
+		final SQLiteBlob blob,
+		final long firstScanId,
+		final long lastScanId,
+		final Map<Long, ScanHeader> scanHeaderById,
+		final Map<Long, DataEncoding> dataEncodingByScanId
 	) throws StreamCorruptedException {
 		super(firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId);
 		
 		this._blob = blob;
-		this._indexScanSlices();
+		this._indexScanSlices((int) (1 + lastScanId - firstScanId) );
 	}
 
 	/**
@@ -77,55 +78,67 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 	 * @see AbstractBlobReader#_buildMapPositions()
 	 */
 	// TODO: factorize this code with the one from BytesReader
-	protected void _indexScanSlices() throws StreamCorruptedException {
+	protected void _indexScanSlices(final int estimatedScansCount) throws StreamCorruptedException {
 
-		int size = getBlobSize();
-		int scanSliceIdx = 1;
+		final int[] scanSliceStartPositions = new int[estimatedScansCount];
+		final int[] peaksCounts = new int[estimatedScansCount];
+		
+		final int size = getBlobSize();
+		int scanSliceIdx = 0;
 		int byteIdx = 0;
-		
-		this._scanSliceStartPositions = new int[_scansCount];
-		this._peaksCounts = new int[_scansCount];
-		
+
 		while (byteIdx < size) {
-			
+
 			// Retrieve the scan id
-			int scanId = _getIntFromBlob(_blob, byteIdx);
+			final long scanId = (long) _getIntFromBlob(_blob, byteIdx);
 			_scanSliceStartPositions[scanSliceIdx] = byteIdx;
-			
+			// scanSliceStartPositions.add(byteIdx);
+
 			// Skip the scan id bytes
 			byteIdx += 4;
 
 			// Retrieve the number of peaks
-			int peaksCount = _getIntFromBlob(_blob, byteIdx);
+			final int peaksCount = _getIntFromBlob(_blob, byteIdx);
 			_peaksCounts[scanSliceIdx] = peaksCount;
+			// peaksCounts.add(byteIdx);
 
 			// Skip the peaksCount bytes
 			byteIdx += 4;
 
 			// Retrieve the DataEncoding corresponding to this scan
-			DataEncoding de = this._dataEncodingByScanId.get(scanId);
+			final DataEncoding de = this._dataEncodingByScanId.get(scanId);
 			this.checkDataEncodingIsNotNull(de, scanId);
-			
+
 			byteIdx += peaksCount * de.getPeakStructSize(); // skip nbPeaks * size of one peak
-			
+
 			scanSliceIdx++;
-		}
-		
-		// statement inside a while loop
+		} // statement inside a while loop
+
+		this._scansCount = scanSliceIdx;
+		this._scanSliceStartPositions = Arrays.copyOf(scanSliceStartPositions, _scansCount);
+		this._peaksCounts = Arrays.copyOf(peaksCounts, _scansCount);
+
+		// this._scansCount = scanSliceStartPositions.size();
+		// this._scanSliceStartPositions = intListToInts(scanSliceStartPositions, _scansCount);
+		// this._peaksCounts = intListToInts(peaksCounts, _scansCount);
 	}
 
 	/**
 	 * @see IBlobReader#idOfScanAt(int)
 	 */
-	public int getScanIdAt(int idx) {
+	public long getScanIdAt(final int idx) {
 		this.checkScanIndexRange(idx);
 		
-		return _getIntFromBlob(_blob, idx);
+		return _getScanIdAt(idx);
 	}
 	
-	private int _getIntFromBlob( SQLiteBlob blob, int idx ) {
+	private long _getScanIdAt(final int idx) {
+		return (long) _getIntFromBlob(_blob, idx);
+	}
+	
+	private int _getIntFromBlob( final SQLiteBlob blob, final int idx ) {
 		
-		byte[] byteBuffer = new byte[4];
+		final byte[] byteBuffer = new byte[4];
 
 		try {
 			blob.read(idx, byteBuffer, 0, 4);
@@ -145,43 +158,48 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 		}
 		return _nbPeaks.get(i);
 	}*/
-
+	
 	/**
-	 * @see IBlobReader#peakAt(int, int)
+	 * @see IBlobReader#readScanSliceAt(int)
 	 */
-	/*public Peak peakAt(int idx, int pos) {
-		if (idx > _nbScans || idx < 1) {
-			throw new IndexOutOfBoundsException("peakAt: Index out of bound start counting at 1");
-		}
-		int nbPeaks = this.nbPeaksOfScanAt(idx);
-		if (pos > nbPeaks) {
-			throw new IndexOutOfBoundsException(
-					"peakAt: Index out of bound, peak wanted index superior at scan slice length");
-		}
-		Peak[] peaks = peaksOfScanAt(idx);
-		return peaks[pos];
-	}*/
+	// TODO: factorize this code with the one from BytesReader
+	public ScanSlice readScanSliceAt(final int idx) {
+		final long scanId = _getScanIdAt(idx);
+		final ScanData scanSliceData = this._readFilteredScanSliceDataAt(idx, scanId, -1.0, -1.0);
+		final ScanHeader sh = _scanHeaderById.get( scanId );
+		
+		// Instantiate a new ScanSlice
+		return new ScanSlice(sh, scanSliceData);
+	}
+	
+	/**
+	 * @see IBlobReader#readScanSliceAt(int)
+	 */
+	// TODO: factorize this code with the one from BytesReader
+	public ScanData readScanSliceDataAt(final int idx) {
+		return this._readFilteredScanSliceDataAt(idx, _getScanIdAt(idx), -1.0, -1.0 );
+	}
+	
+	public ScanData readFilteredScanSliceDataAt(final int idx, final double minMz, final double maxMz) {
+		return this._readFilteredScanSliceDataAt(idx, _getScanIdAt(idx), minMz, maxMz );		
+	}
 
 	/**
 	 * @see IBlobReader#scanSliceOfScanAt(int)
 	 */
 	// TODO: factorize this code with the one from BytesReader
-	public ScanSlice readScanSliceAt(int idx) {
-		this.checkScanIndexRange(idx);
-
-		int scanSliceStartPos = _scanSliceStartPositions[idx];
-		int scanId = this._getIntFromBlob(_blob, scanSliceStartPos);
+	private ScanData _readFilteredScanSliceDataAt(final int idx, final long scanId, final double minMz, final double maxMz) {
 		
 		// Determine peak size in bytes
-		DataEncoding de = this._dataEncodingByScanId.get(scanId);
+		final DataEncoding de = this._dataEncodingByScanId.get(scanId);
 
 		// Determine peaks bytes length
-		int peaksBytesSize = _peaksCounts[idx] * de.getPeakStructSize();
+		final int peaksBytesSize = _peaksCounts[idx] * de.getPeakStructSize();
 		
 		// Skip scan id and peaks count (two integers)
-		scanSliceStartPos += 8;
+		final int scanSliceStartPos = _scanSliceStartPositions[idx] + 8;
 
-		byte[] peaksBytes = new byte[peaksBytesSize];
+		final byte[] peaksBytes = new byte[peaksBytesSize];
 
 		try {
 			_blob.read(scanSliceStartPos, peaksBytes, 0, peaksBytesSize);
@@ -190,27 +208,9 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 		}
 
 		// Instantiate a new ScanData for the corresponding scan slice
-		ScanData scanSliceData = this.readScanSliceData(
-			ByteBuffer.wrap(peaksBytes), scanSliceStartPos, peaksBytesSize, de
+		return this.readScanSliceData(
+			ByteBuffer.wrap(peaksBytes), scanSliceStartPos, peaksBytesSize, de, minMz, maxMz
 		);
-
-		// Instantiate a new ScanData
-		return new ScanSlice(
-			_scanHeaderById.get(scanId),
-			scanSliceData
-		);		
 	}
 
-	/**
-	 * @see IBlobReader#asScanSlicesArray(int, int)
-	 */
-	/*public ScanSlice[] asScanSlicesArray(int firstScanId, int runSliceId) {
-		ScanSlice[] sl = new ScanSlice[_scansCount];
-		for (int i = 1; i <= _scansCount; i++) {
-			ScanSlice s = this.scanSliceOfScanAt(i);
-			s.setRunSliceId(runSliceId);
-			sl[i - 1] = s;
-		}
-		return sl;
-	}*/
 }

@@ -4,7 +4,7 @@ import java.util.List;
 
 import javax.xml.bind.annotation.XmlElementWrapper;
 
-public class Scan extends AbstractParamTree {	
+public class ScanParamTree extends AbstractParamTree {	
 
 	@XmlElementWrapper
 	protected List<ScanWindowList> scanWindowList;
@@ -13,7 +13,7 @@ public class Scan extends AbstractParamTree {
 		return scanWindowList;
 	}
 
-	public Scan() {
+	public ScanParamTree() {
 	}
 	
 }

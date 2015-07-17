@@ -1,13 +1,13 @@
 package fr.profi.mzdb.io.reader;
 
+import java.util.List;
+
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 
 import fr.profi.mzdb.db.model.SourceFile;
-import fr.profi.mzdb.db.table.InstrumentConfigurationTable;
 import fr.profi.mzdb.db.table.SourceFileTable;
 import fr.profi.mzdb.utils.sqlite.ISQLiteRecordExtraction;
-import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
 import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
 
 // TODO: Auto-generated Javadoc
@@ -17,47 +17,38 @@ import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
  * 
  * @author David Bouyssie
  */
-public class SourceFileReader {
-
-	/** The connection. */
-	protected SQLiteConnection connection = null;
-
+public class SourceFileReader extends AbstractTableModelReader<SourceFile> {
 	/**
 	 * Instantiates a new source file reader.
 	 * 
 	 * @param connection
 	 *            the connection
 	 */
-	public SourceFileReader(SQLiteConnection connection) {
-		super();
-		this.connection = connection;
+	public SourceFileReader(SQLiteConnection connection) throws SQLiteException {
+		super(connection);
 	}
 
-	/**
-	 * Gets the source file.
-	 * 
-	 * @param id
-	 *            the id
-	 * @return the source file
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
+	protected ISQLiteRecordExtraction<SourceFile> buildRecordExtractor() {
+		return new ISQLiteRecordExtraction<SourceFile>() {
+
+			public SourceFile extract(SQLiteRecord r) throws SQLiteException {
+
+				int id = r.columnInt(SourceFileTable.ID);
+				String name = r.columnString(SourceFileTable.NAME);
+				String location = r.columnString(SourceFileTable.LOCATION);
+				String paramTreeAsStr = r.columnString(SourceFileTable.PARAM_TREE);
+
+				return new SourceFile(id, name, location, ParamTreeParser.parseParamTree(paramTreeAsStr));
+			}
+		};
+	}
+
 	public SourceFile getSourceFile(int id) throws SQLiteException {
-
-		return new SQLiteQuery(connection, "select * from source_file where id = ?").bind(1, id)
-				.extractRecord(new ISQLiteRecordExtraction<SourceFile>() {
-
-					public SourceFile extract(SQLiteRecord r) throws SQLiteException {
-
-						int id = r.columnInt(InstrumentConfigurationTable.ID);
-						String name = r.columnString(SourceFileTable.NAME);
-						String location = r.columnString(SourceFileTable.LOCATION);
-						String paramTreeAsStr = r.columnString(SourceFileTable.PARAM_TREE);
-
-						return new SourceFile(id, name, location, ParamTreeParser
-								.parseParamTree(paramTreeAsStr));
-					}
-				});
+		return getRecord(SourceFile.TABLE_NAME, id);
 	}
-
+	
+	public List<SourceFile> getSourceFileList() throws SQLiteException {
+		return getRecordList(SourceFile.TABLE_NAME);
+	}
+	
 }

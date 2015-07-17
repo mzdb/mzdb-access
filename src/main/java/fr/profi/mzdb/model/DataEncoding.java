@@ -4,6 +4,8 @@
  */
 package fr.profi.mzdb.model;
 
+import java.nio.ByteOrder;
+
 // TODO: Auto-generated Javadoc
 /**
  * The Class DataEncoding. 1 dataEncoding to 1 Scan

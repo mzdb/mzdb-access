@@ -8,15 +8,12 @@ import fr.profi.mzdb.db.model.params.ParamTree;
  * 
  * @author David Bouyssie
  */
-public class SourceFile extends AbstractTableModel {
+public class Sample extends AbstractTableModel {
 	
-	public static final String TABLE_NAME = "source_file";
+	public static final String TABLE_NAME = "sample";
 
 	/** The name. */
 	protected String name;
-
-	/** The location. */
-	protected String location;
 
 	/**
 	 * Instantiates a new source file.
@@ -25,15 +22,12 @@ public class SourceFile extends AbstractTableModel {
 	 *            the id
 	 * @param name
 	 *            the name
-	 * @param location
-	 *            the location
 	 * @param paramTree
 	 *            the param tree
 	 */
-	public SourceFile(int id, String name, String location, ParamTree paramTree) {
+	public Sample(int id, String name, ParamTree paramTree) {
 		super(id, paramTree);
 		this.name = name;
-		this.location = location;
 	}
 
 	/**
@@ -46,8 +40,8 @@ public class SourceFile extends AbstractTableModel {
 	 * @param location
 	 *            the location
 	 */
-	public SourceFile(int id, String name, String location) {
-		this(id, name, location, null);
+	public Sample(int id, String name) {
+		this(id, name, null);
 	}
 
 	/**
@@ -57,15 +51,6 @@ public class SourceFile extends AbstractTableModel {
 	 */
 	public String getName() {
 		return name;
-	}
-
-	/**
-	 * Gets the location.
-	 * 
-	 * @return the location
-	 */
-	public String getLocation() {
-		return location;
 	}
 
 }

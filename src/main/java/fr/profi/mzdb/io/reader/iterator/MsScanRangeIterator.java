@@ -33,11 +33,11 @@ public class MsScanRangeIterator implements Iterator<Scan> {
 
 	private MsScanRangeIteratorImpl _iter;
 
-	private Integer currentId;
+	private Long currentId;
 
 	private String sqlQuery;
 
-	private Integer trueLastScanId = 0;
+	private Long trueLastScanId = 0L;
 
 	// private boolean toStop = false;
 
@@ -88,7 +88,7 @@ public class MsScanRangeIterator implements Iterator<Scan> {
 				if (bb.getLastScanId() > wantedEndingScanId) {
 					// FIXME: DBO => it was (bb.nbScans() - 2) when idOfScanAt was based on a 1 value starting index
 					// It may cause some issues in the future
-					trueLastScanId = bbReader.getScanIdAt(bb.getScansCount() - 1);
+					trueLastScanId = (long) bbReader.getScanIdAt(bb.getScansCount() - 1);
 				} else if (bb.getLastScanId() == wantedEndingScanId) {
 					trueLastScanId = bb.getLastScanId();
 				} else {

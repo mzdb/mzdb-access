@@ -21,9 +21,9 @@ public class BoundingBox implements Comparable<BoundingBox> {
 	private int _id;
 
 	/** The _first scan id. */
-	protected int _firstScanId;
+	protected long _firstScanId;
 
-	protected int _lastScanId;
+	protected long _lastScanId;
 
 	/** The _run slice id. */
 	protected int _runSliceId;
@@ -80,7 +80,7 @@ public class BoundingBox implements Comparable<BoundingBox> {
 	 * 
 	 * @return the first scan id
 	 */
-	public int getFirstScanId() {
+	public long getFirstScanId() {
 		return _firstScanId;
 	}
 
@@ -89,16 +89,16 @@ public class BoundingBox implements Comparable<BoundingBox> {
 	 * 
 	 * @param scanid the new first scan id
 	 */
-	public void setFirstScanId(int scanid) {
-		_firstScanId = scanid;
+	public void setFirstScanId(long scanId) {
+		_firstScanId = scanId;
 	}
 
-	public int getLastScanId() {
+	public long getLastScanId() {
 		return _lastScanId;
 	}
 
-	public void setLastScanId(int i) {
-		_lastScanId = i;
+	public void setLastScanId(long scanId) {
+		_lastScanId = scanId;
 	}
 
 	/**
@@ -158,22 +158,24 @@ public class BoundingBox implements Comparable<BoundingBox> {
 		// FIXME: remove this workaround when raw2mzDB has been fixed
 		// raw2mzDB is inserting multiple empty spectrum slices pointing to the same spectrum id
 		// Workaround added the 22/01/2015 by DBO
-		HashSet<Integer> scanIdSet = new HashSet<Integer>();
+		HashSet<Long> scanIdSet = new HashSet<Long>();
 		
 		List<ScanSlice> scanSliceList = new ArrayList<ScanSlice>();
+		
 		for (ScanSlice scanSlice : _reader.readAllScanSlices(this._runSliceId)) {
 
-			int scanId = scanSlice.getHeader().getId();
-
-			// if( scanSlice.getData().getMzList().length > 0 ) {
-			if (scanIdSet.contains(scanId) == false) {
-				scanSliceList.add(scanSlice);
-				scanIdSet.add(scanId);
+			long scanId = scanSlice.getHeader().getId();
+			
+			if (scanIdSet.contains(scanId) == true) {
+				throw new IllegalArgumentException("duplicated scan id is: "+scanId);
 			}
+			
+			// if( scanSlice.getData().getMzList().length > 0 ) {
+			scanSliceList.add(scanSlice);
+			scanIdSet.add(scanId);
 		}
 
 		return scanSliceList.toArray(new ScanSlice[scanSliceList.size()]);
-		// return _reader.readAllScanSlices( this._runSliceId );
 	}
 
 	/**

@@ -11,6 +11,8 @@ import fr.profi.mzdb.utils.misc.AbstractInMemoryIdGen;
  * @author David Bouyssie
  */
 public class InstrumentConfiguration extends AbstractInMemoryIdGen {
+	
+	public static final String TABLE_NAME = "instrument_configuration";
 
 	/** The id. */
 	protected int id;
@@ -45,7 +47,7 @@ public class InstrumentConfiguration extends AbstractInMemoryIdGen {
 		this.id = id;
 		this.name = name;
 		this.softwareId = softwareId;
-		this.paramTree=paramTree;
+		this.paramTree = paramTree;
 		this.componentList = comp;
 	}
 

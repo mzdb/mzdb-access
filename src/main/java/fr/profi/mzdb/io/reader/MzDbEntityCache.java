@@ -15,21 +15,21 @@ public class MzDbEntityCache {
 
 	protected ScanHeader[] ms1ScanHeaders = null;
 
-	protected Map<Integer, ScanHeader> ms1ScanHeaderById = null;
+	protected Map<Long, ScanHeader> ms1ScanHeaderById = null;
 	
 	protected ScanHeader[] ms2ScanHeaders = null;
 
-	protected Map<Integer, ScanHeader> ms2ScanHeaderById = null;
+	protected Map<Long, ScanHeader> ms2ScanHeaderById = null;
 	
-	protected Map<Integer, Float> scanTimeById = null;
+	protected Map<Long, Float> scanTimeById = null;
 	
-	protected Map<Integer, ArrayList<Integer>> ms1ScanIdsByTimeIndex = null;
+	protected Map<Integer, ArrayList<Long>> ms1ScanIdsByTimeIndex = null;
 	
-	protected Map<Integer, ArrayList<Integer>> ms2ScanIdsByTimeIndex = null;
+	protected Map<Integer, ArrayList<Long>> ms2ScanIdsByTimeIndex = null;
 
 	protected Map<Integer, DataEncoding> dataEncodingById = null;
 
-	protected Map<Integer, DataEncoding> dataEncodingByScanId = null;
+	protected Map<Long, DataEncoding> dataEncodingByScanId = null;
 
 	protected RunSliceHeader[] runSliceHeaders = null;
 
@@ -39,7 +39,7 @@ public class MzDbEntityCache {
 		return ms1ScanHeaders;
 	}
 
-	public Map<Integer, ScanHeader> getMs1ScanHeaderById() {
+	public Map<Long, ScanHeader> getMs1ScanHeaderById() {
 		return ms1ScanHeaderById;
 	}
 	
@@ -47,15 +47,15 @@ public class MzDbEntityCache {
 		return ms2ScanHeaders;
 	}
 
-	public Map<Integer, ScanHeader> getMs2ScanHeaderById() {
+	public Map<Long, ScanHeader> getMs2ScanHeaderById() {
 		return ms2ScanHeaderById;
 	}
 
-	public Map<Integer, Float> getScanTimeById() {
+	public Map<Long, Float> getScanTimeById() {
 		return scanTimeById;
 	}
 
-	public Map<Integer, DataEncoding> getDataEncodingByScanId() {
+	public Map<Long, DataEncoding> getDataEncodingByScanId() {
 		return dataEncodingByScanId;
 	}
 

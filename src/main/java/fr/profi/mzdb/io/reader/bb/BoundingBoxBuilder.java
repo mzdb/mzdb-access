@@ -24,34 +24,49 @@ public class BoundingBoxBuilder {
 	public static BoundingBox buildBB(
 		int bbId,
 		byte[] bytes,
-		int firstScanId,
-		int lastScanId,
-		Map<Integer, ScanHeader> scanHeaderById,
-		Map<Integer, DataEncoding> dataEncodingByScanId
+		long firstScanId,
+		long lastScanId,
+		Map<Long, ScanHeader> scanHeaderById,
+		Map<Long, DataEncoding> dataEncodingByScanId
 	) throws StreamCorruptedException {
-		return new BoundingBox(bbId, new BytesReader(bytes, firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId));
+		
+		BoundingBox bb = new BoundingBox(bbId, new BytesReader(bytes, firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId));
+		bb.setFirstScanId(firstScanId);
+		bb.setLastScanId(lastScanId);
+		
+		return bb;
 	}
 
 	public static BoundingBox buildBB(
 		int bbId,
 		SQLiteBlob blob,
-		int firstScanId,
-		int lastScanId,
-		Map<Integer, ScanHeader> scanHeaderById,
-		Map<Integer, DataEncoding> dataEncodingByScanId
+		long firstScanId,
+		long lastScanId,
+		Map<Long, ScanHeader> scanHeaderById,
+		Map<Long, DataEncoding> dataEncodingByScanId
 	) throws StreamCorruptedException {
-		return new BoundingBox(bbId, new SQLiteBlobReader(blob, firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId) );
+		
+		BoundingBox bb =  new BoundingBox(bbId, new SQLiteBlobReader(blob, firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId) );
+		bb.setFirstScanId(firstScanId);
+		bb.setLastScanId(lastScanId);
+		
+		return bb;
 	}
 
 	public static BoundingBox buildBB(
 		int bbId,
 		InputStream stream,
-		int firstScanId,
-		int lastScanId,
-		Map<Integer, ScanHeader> scanHeaderById,
-		Map<Integer, DataEncoding> dataEncodingByScanId
+		long firstScanId,
+		long lastScanId,
+		Map<Long, ScanHeader> scanHeaderById,
+		Map<Long, DataEncoding> dataEncodingByScanId
 	) {
-		return new BoundingBox(bbId, new StreamReader(stream, firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId) );
+		
+		BoundingBox bb = new BoundingBox(bbId, new StreamReader(stream, firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId) );
+		bb.setFirstScanId(firstScanId);
+		bb.setLastScanId(lastScanId);
+		
+		return bb;
 	}
 
 }

@@ -17,10 +17,31 @@ public class MgfHeader {
 	 * @return a new MgfHeader
 	 */
 	public MgfHeader(String title, double precMz, int charge) {
-		this(new MgfHeaderEntry[] { new MgfHeaderEntry(MgfField.TITLE, title),
+		this(new MgfHeaderEntry[] {
+				new MgfHeaderEntry(MgfField.TITLE, title),
 				new MgfHeaderEntry(MgfField.PEPMASS, String.format("%.4f", precMz)),
 				// TODO: use the trailer corresponding to the acquisition polarity (see mzDB meta-data)
-				new MgfHeaderEntry(MgfField.CHARGE, charge, "+") });
+				new MgfHeaderEntry(MgfField.CHARGE, charge, "+")
+			}
+		);
+	}
+	
+	/**
+	 * 
+	 * @param title
+	 * @param pepMass
+	 * @param rt
+	 * @return a new MgfHeader
+	 */
+	public MgfHeader(String title, double precMz, float rt) {
+
+		this(
+			new MgfHeaderEntry[] {
+				new MgfHeaderEntry(MgfField.TITLE, title),
+				new MgfHeaderEntry(MgfField.PEPMASS, String.format("%.4f", precMz)),
+				new MgfHeaderEntry(MgfField.RTINSECONDS, String.format("%.2f", rt))
+			}
+		);
 	}
 
 	/**
@@ -33,11 +54,15 @@ public class MgfHeader {
 	 */
 	public MgfHeader(String title, double precMz, int charge, float rt) {
 
-		this(new MgfHeaderEntry[] { new MgfHeaderEntry(MgfField.TITLE, title),
+		this(
+			new MgfHeaderEntry[] {
+				new MgfHeaderEntry(MgfField.TITLE, title),
 				new MgfHeaderEntry(MgfField.PEPMASS, String.format("%.4f", precMz)),
 				// TODO: use the trailer corresponding to the acquisition polarity (see mzDB meta-data)
 				new MgfHeaderEntry(MgfField.CHARGE, charge, "+"),
-				new MgfHeaderEntry(MgfField.RTINSECONDS, String.format("%.2f", rt)) });
+				new MgfHeaderEntry(MgfField.RTINSECONDS, String.format("%.2f", rt))
+			}
+		);
 	}
 
 	public StringBuilder appendToStringBuilder(StringBuilder sb) {

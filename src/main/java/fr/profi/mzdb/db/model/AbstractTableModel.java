@@ -10,7 +10,9 @@ import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.db.model.params.param.UserText;
+import fr.profi.mzdb.io.reader.ParamTreeParser;
 import fr.profi.mzdb.utils.misc.AbstractInMemoryIdGen;
+import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -20,8 +22,10 @@ import fr.profi.mzdb.utils.misc.AbstractInMemoryIdGen;
  */
 public abstract class AbstractTableModel extends AbstractInMemoryIdGen implements IParamContainer {
 
+	public static String TABLE_NAME;
+	
 	/** The id. */
-	protected int id;
+	protected final long id;
 
 	/** The param tree. */
 	protected ParamTree paramTree = null;
@@ -34,7 +38,7 @@ public abstract class AbstractTableModel extends AbstractInMemoryIdGen implement
 	 * @param paramTree
 	 *            the param tree
 	 */
-	protected AbstractTableModel(int id, ParamTree paramTree) {
+	protected AbstractTableModel(long id, ParamTree paramTree) {
 		super();
 		this.id = id;
 		this.paramTree = paramTree;
@@ -45,7 +49,7 @@ public abstract class AbstractTableModel extends AbstractInMemoryIdGen implement
 	 * 
 	 * @return the id
 	 */
-	public int getId() {
+	public long getId() {
 		return id;
 	}
 
@@ -67,15 +71,10 @@ public abstract class AbstractTableModel extends AbstractInMemoryIdGen implement
 	 * 
 	 * @return the param tree
 	 */
-	public ParamTree getParamTree(MzDbReader mzDbReader) {
+	public ParamTree getParamTree(MzDbReader mzDbReader) throws SQLiteException {
 		if (!this.hasParamTree()) {
-			try {
-				this.loadParamTree(mzDbReader);
-			} catch (SQLiteException e) {
-				System.out.println(e.getMessage());
-			}
+			this.loadParamTree(mzDbReader);
 		}
-
 		return paramTree;
 	}
 
@@ -88,14 +87,17 @@ public abstract class AbstractTableModel extends AbstractInMemoryIdGen implement
 	public void setParamTree(ParamTree paramTree) {
 		this.paramTree = paramTree;
 	}
-
+	
 	/**
 	 * Loads the param tree.
 	 * 
-	 * @param paramTree
-	 *            the new param tree
+	 * @param paramTree the new param tree
 	 */
-	abstract public void loadParamTree(MzDbReader mzDbReader) throws SQLiteException;
+	protected void loadParamTree(MzDbReader mzDbReader) throws SQLiteException {
+		String sqlString = "SELECT param_tree FROM " + TABLE_NAME;
+		String paramTreeAsStr = new SQLiteQuery(mzDbReader.getConnection(), sqlString).extractSingleString();
+		this.paramTree = ParamTreeParser.parseParamTree(paramTreeAsStr);
+	}
 
 	/*
 	 * (non-Javadoc)

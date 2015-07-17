@@ -17,7 +17,7 @@ public interface ILcContext {
 	 * 
 	 * @return the scan id
 	 */
-	int getScanId();
+	long getScanId();
 
 	/**
 	 * Gets the elution time.

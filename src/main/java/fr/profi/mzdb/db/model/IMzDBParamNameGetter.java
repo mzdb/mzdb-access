@@ -1,6 +1,3 @@
-/**
- * 
- */
 package fr.profi.mzdb.db.model;
 
 /**

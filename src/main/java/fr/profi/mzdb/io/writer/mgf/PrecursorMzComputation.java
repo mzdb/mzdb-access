@@ -2,7 +2,11 @@ package fr.profi.mzdb.io.writer.mgf;
 
 /** */
 public enum PrecursorMzComputation {
-	DEFAULT("default precursor mz"), REFINED_PWIZ("pwiz refined precursor mz"), REFINED_MZDB("mzdb refined precursor mz");
+	EXTRACTED("extracted mz value from survey"),
+	MAIN_PRECURSOR_MZ("main precursor mz"),
+	SELECTED_ION_MZ("selected ion mz"),
+	REFINED("mzdb-access refined precursor mz"),
+	REFINED_THERMO("Thermo refined precursor mz");
 
 	private final String paramName;
 

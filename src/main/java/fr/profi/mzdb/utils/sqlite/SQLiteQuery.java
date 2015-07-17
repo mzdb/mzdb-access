@@ -5,8 +5,10 @@ package fr.profi.mzdb.utils.sqlite;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
@@ -83,16 +85,17 @@ public class SQLiteQuery {
 			this.dispose();
 		}
 	}
-
-	public <T> T[] extractRecords(ISQLiteRecordExtraction<T> extractor, T[] extractions)
-			throws SQLiteException {
+	
+	public <T> T[] extractRecords(ISQLiteRecordExtraction<T> extractor, T[] records) throws SQLiteException {
 
 		if (this.isStatementDisposed() == false) {
+			
+			int recordsCount = records.length;
 
 			// Iterate over each record
 			int idx = 0;
-			while (this.stmt.step()) {
-				extractions[idx] = extractor.extract(new SQLiteRecord(this));
+			while (this.stmt.step() && idx < recordsCount) {
+				records[idx] = extractor.extract(new SQLiteRecord(this));
 				idx++;
 			}
 
@@ -100,7 +103,25 @@ public class SQLiteQuery {
 			this.dispose();
 		}
 
-		return extractions;
+		return records;
+	}
+	
+	public <T> List<T> extractRecordList(ISQLiteRecordExtraction<T> extractor) throws SQLiteException {
+
+		List<T> records = new ArrayList<T>();
+		
+		if (this.isStatementDisposed() == false) {
+
+			// Iterate over each record
+			while (this.stmt.step()) {
+				records.add(extractor.extract(new SQLiteRecord(this)));
+			}
+
+			// Dispose the statement
+			this.dispose();
+		}
+
+		return records;
 	}
 
 	public <T> T extractRecord(ISQLiteRecordExtraction<T> extractor) throws SQLiteException {

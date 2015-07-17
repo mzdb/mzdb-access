@@ -1,12 +1,9 @@
 package fr.profi.mzdb.io.reader;
 
-import javax.xml.bind.JAXBException;
-import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.Unmarshaller;
 import javax.xml.transform.sax.SAXSource;
 
-import org.xml.sax.SAXException;
-
-import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.db.model.params.ComponentList;
 import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.model.params.Precursor;
@@ -20,6 +17,12 @@ import fr.profi.mzdb.utils.jaxb.XercesSAXParser;
  * @author David Bouyssie
  */
 public class ParamTreeParser {
+	
+	/** The xml mappers. */
+	public static Unmarshaller paramTreeUnmarshaller = null;
+	public static Unmarshaller componentListUnmarshaller = null;
+	public static Unmarshaller scanListUnmarshaller = null;
+	public static Unmarshaller precursorUnmarshaller = null;
 
 	/**
 	 * Parses the param tree.
@@ -32,13 +35,14 @@ public class ParamTreeParser {
 		ParamTree paramTree = null;
 		
 		try {
+			if( paramTreeUnmarshaller == null ) {
+				paramTreeUnmarshaller = JAXBContext.newInstance(ParamTree.class).createUnmarshaller();
+			}
+			
 			SAXSource source = XercesSAXParser.getSAXSource( paramTreeAsStr );
-			paramTree = (ParamTree) MzDbReader.paramTreeUnmarshaller.unmarshal(source);
-		} catch (JAXBException e) {
-			e.printStackTrace();
-		} catch (ParserConfigurationException e) {
-			e.printStackTrace();
-		} catch (SAXException e) {
+			paramTree = (ParamTree) paramTreeUnmarshaller.unmarshal(source);
+			
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		
@@ -50,13 +54,14 @@ public class ParamTreeParser {
 		ScanList scanList = null;
 		
 		try {
+			if( scanListUnmarshaller == null ) {
+				scanListUnmarshaller = JAXBContext.newInstance(ScanList.class).createUnmarshaller();
+			}
+			
 			SAXSource source = XercesSAXParser.getSAXSource( scanListAsStr );
-			scanList = (ScanList) MzDbReader.scanListUnmarshaller.unmarshal(source);
-		} catch (JAXBException e) {
-			e.printStackTrace();
-		} catch (ParserConfigurationException e) {
-			e.printStackTrace();
-		} catch (SAXException e) {
+			scanList = (ScanList) scanListUnmarshaller.unmarshal(source);
+			
+		}  catch (Exception e) {
 			e.printStackTrace();
 		}
 		
@@ -67,42 +72,35 @@ public class ParamTreeParser {
 		Precursor prec = null;
 		
 		try {
+			if( precursorUnmarshaller == null ) {
+				precursorUnmarshaller = JAXBContext.newInstance(Precursor.class).createUnmarshaller();
+			}
+			
 			SAXSource source = XercesSAXParser.getSAXSource( precursorAsStr );
-			prec = (Precursor) MzDbReader.precursorUnmarshaller.unmarshal(source);
-		} catch (JAXBException e) {
-			e.printStackTrace();
-		} catch (ParserConfigurationException e) {
-			e.printStackTrace();
-		} catch (SAXException e) {
+			prec = (Precursor) precursorUnmarshaller.unmarshal(source);
+			
+		}  catch (Exception e) {
 			e.printStackTrace();
 		}
 
 		return prec;
 	}
-
-	/**
-	 * Parses the instrument config param tree.
-	 * 
-	 * @param paramTreeAsStr
-	 *            the param tree as str
-	 * @return the instrument config param tree
-	 */
+	
 	synchronized public static ComponentList parseComponentList(String paramTreeAsStr) {
 
 		ComponentList paramTree = null;
 		
 		try {
+			if( componentListUnmarshaller == null ) {
+				componentListUnmarshaller = JAXBContext.newInstance(ComponentList.class).createUnmarshaller();
+			}
+			
 			SAXSource source = XercesSAXParser.getSAXSource( paramTreeAsStr );
-			paramTree = (ComponentList) MzDbReader.instrumentConfigUnmarshaller.unmarshal(source);
-		} catch (JAXBException e) {
-			e.printStackTrace();
-		} catch (ParserConfigurationException e) {
-			e.printStackTrace();
-		} catch (SAXException e) {
+			paramTree = (ComponentList) componentListUnmarshaller.unmarshal(source);
+			
+		}  catch (Exception e) {
 			e.printStackTrace();
 		}
-		
-		ParamTreeParser.class.notify();
 		
 		return paramTree;
 	}

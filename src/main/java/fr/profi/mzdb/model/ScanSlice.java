@@ -31,6 +31,14 @@ public class ScanSlice extends Scan {
 	 */
 	public ScanSlice(ScanHeader header, ScanData scanData) {
 		super(header, scanData);
+		
+    if( header == null ) {
+      throw new IllegalArgumentException("a ScanHeader must be provided");
+    }
+    
+    if( scanData == null ) {
+      throw new IllegalArgumentException("a ScanData must be provided");
+    }
 	}
 
 	/**
@@ -38,7 +46,7 @@ public class ScanSlice extends Scan {
 	 * 
 	 * @return the scan id
 	 */
-	public int getScanId() {
+	public long getScanId() {
 		return header.getId();
 	}
 

@@ -1,4 +1,8 @@
-//package fr.profi.mzdb.utils.lambda;
+package fr.profi.mzdb.utils.lambda;
+
+public interface JavaStreamExceptionWrappers {
+  
+}
 //
 //import java.util.function.Consumer;
 //import java.util.function.Function;

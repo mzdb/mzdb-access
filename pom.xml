@@ -9,7 +9,7 @@
 
   <groupId>fr.profi</groupId>
   <artifactId>mzdb-access</artifactId>
-  <version>0.2.0</version>
+  <version>0.2.1</version>
 
   <description>The mzDB access Java library</description>
 
@@ -19,7 +19,7 @@
   </properties>
 
   <scm>
-    <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-access/trunk</connection>
+    <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-access/tags/0.2.1</connection>
   </scm>
 
   <dependencies>
@@ -71,6 +71,13 @@
       <version>1.47</version> <!-- Latest version checked on 21 january 2015 -->
     </dependency>
 
+	<!-- JUnit testing -->
+	<dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.11</version>
+        <scope>test</scope>
+      </dependency>
   </dependencies>
 
   <build>

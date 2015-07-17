@@ -19,7 +19,7 @@ public class ScanList extends AbstractParamTree {
 	protected int count;
 
 	@XmlElement( name="scan" )
-	protected List<Scan> scans;
+	protected List<ScanParamTree> scans;
 
 	public ScanList() {
 	}
@@ -28,7 +28,7 @@ public class ScanList extends AbstractParamTree {
 		this.count = c;
 	}
 	
-	public List<Scan> getScans() {
+	public List<ScanParamTree> getScans() {
 		return scans;
 	}
 

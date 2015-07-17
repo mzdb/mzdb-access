@@ -3,7 +3,7 @@ package fr.profi.mzdb.utils.ms;
 public class MsUtils {
 
     /** The proton mass. */
-    static double protonMass = 1.007276466812;
+    public static double protonMass = 1.007276466812;
 
     /**
      * 

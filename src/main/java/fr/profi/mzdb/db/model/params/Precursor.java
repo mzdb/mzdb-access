@@ -4,6 +4,8 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import fr.profi.mzdb.db.model.params.param.CVEntry;
+
 @XmlRootElement(name = "precursor")
 public class Precursor {
   
@@ -11,7 +13,7 @@ public class Precursor {
   protected String spectrumRef;
   
   @XmlElement(name="isolationWindow")
-  protected IsolationWindow isolationWindow;
+  protected IsolationWindowParamTree isolationWindow;
   
   @XmlElement(name="selectedIonList")
   protected SelectedIonList selectedIonList;
@@ -23,7 +25,7 @@ public class Precursor {
       return spectrumRef;
   }
   
-  public IsolationWindow getIsolationWindow() {
+  public IsolationWindowParamTree getIsolationWindow() {
       return isolationWindow;
   }
   
@@ -34,5 +36,15 @@ public class Precursor {
   public SelectedIonList getSelectedIonList() {
       return selectedIonList;
   }
+  
+  public double parseFirstSelectedIonMz() {
+	  
+	  SelectedIonList sil = this.getSelectedIonList();
+	  SelectedIon si = sil.getSelectedIons().get(0);
+	  String precMzAsStr = si.getCVParam(CVEntry.SELECTED_ION_MZ).getValue();
+	  
+      return Double.parseDouble(precMzAsStr);
+  }
+  
 }
  
