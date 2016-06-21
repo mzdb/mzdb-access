@@ -1,6 +1,3 @@
-/**
- * 
- */
 package fr.profi.mzdb.utils.sqlite;
 
 import com.almworks.sqlite4java.SQLiteException;

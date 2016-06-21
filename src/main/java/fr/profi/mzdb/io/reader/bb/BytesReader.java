@@ -7,9 +7,9 @@ import java.util.Map;
 
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.model.DataEncoding;
-import fr.profi.mzdb.model.ScanData;
-import fr.profi.mzdb.model.ScanHeader;
-import fr.profi.mzdb.model.ScanSlice;
+import fr.profi.mzdb.model.SpectrumData;
+import fr.profi.mzdb.model.SpectrumHeader;
+import fr.profi.mzdb.model.SpectrumSlice;
 
 /**
  * @author marco This implementation is mainly used is mzDbReader
@@ -29,7 +29,7 @@ public class BytesReader extends AbstractBlobReader {
 	/**
 	 * Constructor
 	 * 
-	 * @param dataEncodings, DataEncoding object for each scan, usually given by a mzDbReaderInstance
+	 * @param dataEncodings, DataEncoding object for each spectrum, usually given by a mzDbReaderInstance
 	 * @param data, array of byte of the blob
 	 * @throws StreamCorruptedException 
 	 * @see MzDbReader
@@ -37,36 +37,36 @@ public class BytesReader extends AbstractBlobReader {
 	 */
 	public BytesReader(
 		final byte[] bytes,
-		final long firstScanId,
-		final long lastScanId,
-		final Map<Long, ScanHeader> scanHeaderById,
-		final Map<Long, DataEncoding> dataEncodingByScanId
+		final long firstSpectrumId,
+		final long lastSpectrumId,
+		final Map<Long, SpectrumHeader> spectrumHeaderById,
+		final Map<Long, DataEncoding> dataEncodingBySpectrumId
 	) throws StreamCorruptedException {
-		super(firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId);
+		super(firstSpectrumId, lastSpectrumId, spectrumHeaderById, dataEncodingBySpectrumId);
 		
 		this._bbByteBuffer = ByteBuffer.wrap(bytes);
-		this._firstDataEncondig = dataEncodingByScanId.values().iterator().next();
+		this._firstDataEncondig = dataEncodingBySpectrumId.values().iterator().next();
 		this._bbByteBuffer.order(_firstDataEncondig.getByteOrder());
 		this._blobSize = bytes.length;
 		
 		//logger.debug("BytesReader: blobSize="+ _blobSize);
 		
-		this._indexScanSlices((int) (1 + lastScanId - firstScanId) );
+		this._indexSpectrumSlices((int) (1 + lastSpectrumId - firstSpectrumId) );
 	}
 
 	/**
-	 * Do a first parse of the blob to determine beginning index of each scan slice
+	 * Do a first parse of the blob to determine beginning index of each spectrum slice
 	 * @throws StreamCorruptedException 
 	 * 
 	 * @see AbstractBlobReader
 	 * @see AbstractBlobReader._buildMpaPositions()
 	 */
-	protected void _indexScanSlices(final int estimatedScansCount) throws StreamCorruptedException {
+	protected void _indexSpectrumSlices(final int estimatedSpectraCount) throws StreamCorruptedException {
 		
-		final int[] scanSliceStartPositions = new int[estimatedScansCount];
-		final int[] peaksCounts = new int[estimatedScansCount];
+		final int[] spectrumSliceStartPositions = new int[estimatedSpectraCount];
+		final int[] peaksCounts = new int[estimatedSpectraCount];
 		
-		int scanSliceIdx = 0;
+		int spectrumSliceIdx = 0;
 		int byteIdx = 0;
 		
 		while (byteIdx < _blobSize) {
@@ -74,29 +74,29 @@ public class BytesReader extends AbstractBlobReader {
 			// Set the new position to access the byte buffer
 			_bbByteBuffer.position(byteIdx);
 			
-			// Retrieve the scan id
-			final long scanId = (long) _bbByteBuffer.getInt();
-			scanSliceStartPositions[scanSliceIdx] = byteIdx;
-			//System.out.println("scan id is: "+scanId);
+			// Retrieve the spectrum id
+			final long spectrumId = (long) _bbByteBuffer.getInt();
+			spectrumSliceStartPositions[spectrumSliceIdx] = byteIdx;
+			//System.out.println("spectrum id is: "+spectrumId);
 			
 			// Retrieve the number of peaks
 			final int peaksCount = _bbByteBuffer.getInt(); 
-			peaksCounts[scanSliceIdx] = peaksCount;
+			peaksCounts[spectrumSliceIdx] = peaksCount;
 
-			// Retrieve the DataEncoding corresponding to this scan
-			final DataEncoding de = this._dataEncodingByScanId.get(scanId);
-			this.checkDataEncodingIsNotNull(de, scanId);
+			// Retrieve the DataEncoding corresponding to this spectrum
+			final DataEncoding de = this._dataEncodingBySpectrumId.get(spectrumId);
+			this.checkDataEncodingIsNotNull(de, spectrumId);
 			
-			// Skip the scan id, peaksCount and peaks (peaksCount * size of one peak)
+			// Skip the spectrum id, peaksCount and peaks (peaksCount * size of one peak)
 			byteIdx += 8 + (peaksCount * de.getPeakStructSize());
 			
-			scanSliceIdx++;
+			spectrumSliceIdx++;
 			
 		} // statement inside a while loop
 		
-		this._scansCount = scanSliceIdx;
-		this._scanSliceStartPositions = Arrays.copyOf(scanSliceStartPositions, _scansCount);
-		this._peaksCounts = Arrays.copyOf(peaksCounts, _scansCount);
+		this._spectraCount = spectrumSliceIdx;
+		this._spectrumSliceStartPositions = Arrays.copyOf(spectrumSliceStartPositions, _spectraCount);
+		this._peaksCounts = Arrays.copyOf(peaksCounts, _spectraCount);
 	}
 
 	/**
@@ -112,71 +112,71 @@ public class BytesReader extends AbstractBlobReader {
 	}
 
 	/**
-	 * @see IBlobReader#getScansCount()
+	 * @see IBlobReader#getSpectraCount()
 	 */
-	public int getScansCount() {
-		return _scansCount;
+	public int getSpectraCount() {
+		return _spectraCount;
 	}
 
 	/**
-	 * @see IBlobReader#idOfScanAt(int)
+	 * @see IBlobReader#idOfSpectrumAt(int)
 	 */
-	public long getScanIdAt(final int idx) {
-		this.checkScanIndexRange(idx);
-		return _getScanIdAt(idx);
+	public long getSpectrumIdAt(final int idx) {
+		this.checkSpectrumIndexRange(idx);
+		return _getSpectrumIdAt(idx);
 	}
 	
-	private long _getScanIdAt(final int idx) {
-		return (long) _bbByteBuffer.getInt(_scanSliceStartPositions[idx]);
+	private long _getSpectrumIdAt(final int idx) {
+		return (long) _bbByteBuffer.getInt(_spectrumSliceStartPositions[idx]);
 	}
 
 	/**
-	 * @see IBlobReader#nbPeaksOfScanAt(int)
+	 * @see IBlobReader#nbPeaksOfSpectrumAt(int)
 	 */
-	/*public int nbPeaksOfScanAt(int idx) {
-		if (idx < 0 || idx >= _scansCount) {
-			throw new IndexOutOfBoundsException("nbPeaksOfScanAt: index out of bounds (i="+idx+"), index counting starts at 0");
+	/*public int nbPeaksOfSpectrumAt(int idx) {
+		if (idx < 0 || idx >= _spectraCount) {
+			throw new IndexOutOfBoundsException("nbPeaksOfSpectrumAt: index out of bounds (i="+idx+"), index counting starts at 0");
 		}
 		
 		return _peaksCounts[idx];
 	}*/
 
 	/**
-	 * @see IBlobReader#readScanSliceAt(int)
+	 * @see IBlobReader#readSpectrumSliceAt(int)
 	 */
-	public ScanSlice readScanSliceAt(final int idx) {
-		long scanId = _getScanIdAt(idx);
-		ScanData scanSliceData = this._readFilteredScanSliceDataAt(idx, scanId, -1.0, -1.0 );
-		ScanHeader sh = _scanHeaderById.get( scanId );
+	public SpectrumSlice readSpectrumSliceAt(final int idx) {
+		long spectrumId = _getSpectrumIdAt(idx);
+		SpectrumData spectrumSliceData = this._readFilteredSpectrumSliceDataAt(idx, spectrumId, -1.0, -1.0 );
+		SpectrumHeader sh = _spectrumHeaderById.get( spectrumId );
 		
-		// Instantiate a new ScanSlice
-		return new ScanSlice(sh, scanSliceData);
+		// Instantiate a new SpectrumSlice
+		return new SpectrumSlice(sh, spectrumSliceData);
 	}
 	
 	/**
-	 * @see IBlobReader#readScanSliceAt(int)
+	 * @see IBlobReader#readSpectrumSliceAt(int)
 	 */
-	public ScanData readScanSliceDataAt(final int idx) {
-		return this._readFilteredScanSliceDataAt(idx, _getScanIdAt(idx), -1.0, -1.0 );		
+	public SpectrumData readSpectrumSliceDataAt(final int idx) {
+		return this._readFilteredSpectrumSliceDataAt(idx, _getSpectrumIdAt(idx), -1.0, -1.0 );		
 	}
 	
-	public ScanData readFilteredScanSliceDataAt(final int idx, final double minMz, final double maxMz) {
-		return this._readFilteredScanSliceDataAt(idx, _getScanIdAt(idx), minMz, maxMz );		
+	public SpectrumData readFilteredSpectrumSliceDataAt(final int idx, final double minMz, final double maxMz) {
+		return this._readFilteredSpectrumSliceDataAt(idx, _getSpectrumIdAt(idx), minMz, maxMz );		
 	}
 	
-	private ScanData _readFilteredScanSliceDataAt(final int idx, final long scanId, final double minMz, final double maxMz) {
+	private SpectrumData _readFilteredSpectrumSliceDataAt(final int idx, final long spectrumId, final double minMz, final double maxMz) {
 		
 		// Determine peak size in bytes
-		final DataEncoding de = this._dataEncodingByScanId.get(scanId);
+		final DataEncoding de = this._dataEncodingBySpectrumId.get(spectrumId);
 
 		// Determine peaks bytes length
 		final int peaksBytesSize = _peaksCounts[idx] * de.getPeakStructSize();
 		
-		// Skip scan id and peaks count (two integers)
-		final int scanSliceStartPos = _scanSliceStartPositions[idx] + 8;
+		// Skip spectrum id and peaks count (two integers)
+		final int spectrumSliceStartPos = _spectrumSliceStartPositions[idx] + 8;
 
-		// Instantiate a new ScanData for the corresponding scan slice
-		return this.readScanSliceData(_bbByteBuffer, scanSliceStartPos, peaksBytesSize, de, minMz, maxMz);	
+		// Instantiate a new SpectrumData for the corresponding spectrum slice
+		return this.readSpectrumSliceData(_bbByteBuffer, spectrumSliceStartPos, peaksBytesSize, de, minMz, maxMz);	
 	}
 
 }

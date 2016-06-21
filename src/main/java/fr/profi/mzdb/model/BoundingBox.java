@@ -8,7 +8,7 @@ import com.almworks.sqlite4java.SQLiteException;
 
 import fr.profi.mzdb.io.reader.bb.IBlobReader;
 import fr.profi.mzdb.model.DataMode;
-import fr.profi.mzdb.model.ScanSlice;
+import fr.profi.mzdb.model.SpectrumSlice;
 
 /**
  * The Class BoundingBox.
@@ -20,10 +20,10 @@ public class BoundingBox implements Comparable<BoundingBox> {
 	/** The _id. */
 	private int _id;
 
-	/** The _first scan id. */
-	protected long _firstScanId;
+	/** The _first spectrum id. */
+	protected long _firstSpectrumId;
 
-	protected long _lastScanId;
+	protected long _lastSpectrumId;
 
 	/** The _run slice id. */
 	protected int _runSliceId;
@@ -76,29 +76,29 @@ public class BoundingBox implements Comparable<BoundingBox> {
 	}
 
 	/**
-	 * Gets the first scan id.
+	 * Gets the first spectrum id.
 	 * 
-	 * @return the first scan id
+	 * @return the first spectrum id
 	 */
-	public long getFirstScanId() {
-		return _firstScanId;
+	public long getFirstSpectrumId() {
+		return _firstSpectrumId;
 	}
 
 	/**
-	 * Sets the first scan id.
+	 * Sets the first spectrum id.
 	 * 
-	 * @param scanid the new first scan id
+	 * @param spectrumid the new first spectrum id
 	 */
-	public void setFirstScanId(long scanId) {
-		_firstScanId = scanId;
+	public void setFirstSpectrumId(long spectrumId) {
+		_firstSpectrumId = spectrumId;
 	}
 
-	public long getLastScanId() {
-		return _lastScanId;
+	public long getLastSpectrumId() {
+		return _lastSpectrumId;
 	}
 
-	public void setLastScanId(long scanId) {
-		_lastScanId = scanId;
+	public void setLastSpectrumId(long spectrumId) {
+		_lastSpectrumId = spectrumId;
 	}
 
 	/**
@@ -120,12 +120,12 @@ public class BoundingBox implements Comparable<BoundingBox> {
 	}
 
 	/**
-	 * Scans count.
+	 * Spectra count.
 	 * 
 	 * @return the int
 	 */
-	public int getScansCount() {
-		return _reader.getScansCount();
+	public int getSpectraCount() {
+		return _reader.getSpectraCount();
 	}
 
 	/**
@@ -133,8 +133,8 @@ public class BoundingBox implements Comparable<BoundingBox> {
 	 * 
 	 * @return the float
 	 */
-	public float getMinScanId() throws SQLiteException {
-		return this._reader.getScanIdAt(0);
+	public float getMinSpectrumId() throws SQLiteException {
+		return this._reader.getSpectrumIdAt(0);
 	}
 
 	/**
@@ -142,50 +142,50 @@ public class BoundingBox implements Comparable<BoundingBox> {
 	 * 
 	 * @return the float
 	 */
-	public float getMaxScanId() {
-		return this._reader.getScanIdAt(this.getScansCount() - 1);
+	public float getMaxSpectrumId() {
+		return this._reader.getSpectrumIdAt(this.getSpectraCount() - 1);
 	}
 
 	/**
-	 * As scan slices array.
+	 * As spectrum slices array.
 	 * 
-	 * @param firstScanID the first scan id
+	 * @param firstSpectrumID the first spectrum id
 	 * @param runSliceID the run slice id
-	 * @return the scan slice[]
+	 * @return the spectrum slice[]
 	 */
-	public ScanSlice[] toScanSlices() {
+	public SpectrumSlice[] toSpectrumSlices() {
 	  
 		// FIXME: remove this workaround when raw2mzDB has been fixed
 		// raw2mzDB is inserting multiple empty spectrum slices pointing to the same spectrum id
 		// Workaround added the 22/01/2015 by DBO
-		HashSet<Long> scanIdSet = new HashSet<Long>();
+		HashSet<Long> spectrumIdSet = new HashSet<Long>();
 		
-		List<ScanSlice> scanSliceList = new ArrayList<ScanSlice>();
+		List<SpectrumSlice> spectrumSliceList = new ArrayList<SpectrumSlice>();
 		
-		for (ScanSlice scanSlice : _reader.readAllScanSlices(this._runSliceId)) {
+		for (SpectrumSlice spectrumSlice : _reader.readAllSpectrumSlices(this._runSliceId)) {
 
-			long scanId = scanSlice.getHeader().getId();
+			long spectrumId = spectrumSlice.getHeader().getId();
 			
-			if (scanIdSet.contains(scanId) == true) {
-				throw new IllegalArgumentException("duplicated scan id is: "+scanId);
+			if (spectrumIdSet.contains(spectrumId) == true) {
+				throw new IllegalArgumentException("duplicated spectrum id is: "+spectrumId);
 			}
 			
-			// if( scanSlice.getData().getMzList().length > 0 ) {
-			scanSliceList.add(scanSlice);
-			scanIdSet.add(scanId);
+			// if( spectrumSlice.getData().getMzList().length > 0 ) {
+			spectrumSliceList.add(spectrumSlice);
+			spectrumIdSet.add(spectrumId);
 		}
 
-		return scanSliceList.toArray(new ScanSlice[scanSliceList.size()]);
+		return spectrumSliceList.toArray(new SpectrumSlice[spectrumSliceList.size()]);
 	}
 
 	/**
-	 * Scan slice of scan at.
+	 * Spectrum slice of spectrum at.
 	 * 
 	 * @param idx the idx
-	 * @return the scan slice
+	 * @return the spectrum slice
 	 */
 	/*
-	 * public ScanSlice scanSliceOfScanAt(int idx) { return _reader.scanSliceOfScanAt(idx); }
+	 * public SpectrumSlice spectrumSliceOfSpectrumAt(int idx) { return _reader.spectrumSliceOfSpectrumAt(idx); }
 	 */
 
 	/*
@@ -199,9 +199,9 @@ public class BoundingBox implements Comparable<BoundingBox> {
 	public int compareTo(BoundingBox bb) {
 
 		try {
-			if (this.getMinScanId() < bb.getMinScanId()) {
+			if (this.getMinSpectrumId() < bb.getMinSpectrumId()) {
 				return -1;
-			} else if (Math.abs(this.getMinScanId() - bb.getMinScanId()) == 0) {
+			} else if (Math.abs(this.getMinSpectrumId() - bb.getMinSpectrumId()) == 0) {
 				return 0;
 			}
 		} catch (SQLiteException e) {

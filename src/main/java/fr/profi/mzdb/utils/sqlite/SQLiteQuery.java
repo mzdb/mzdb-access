@@ -1,6 +1,3 @@
-/**
- * 
- */
 package fr.profi.mzdb.utils.sqlite;
 
 import java.io.InputStream;
@@ -20,16 +17,14 @@ import com.almworks.sqlite4java.SQLiteStatement;
  */
 public class SQLiteQuery {
 
-	protected SQLiteConnection connection = null;
-	protected String queryString = null;
-	protected SQLiteStatement stmt = null;
-	protected SQLiteResultDescriptor resultDesc = null;
+	private String queryString = null;
+	private SQLiteStatement stmt = null;
+	private SQLiteResultDescriptor resultDesc = null;
 
 	public SQLiteQuery(SQLiteConnection connection, String sqlQuery, boolean cacheStmt)
 			throws SQLiteException {
 		super();
 
-		this.connection = connection;
 		this.queryString = sqlQuery;
 		this.stmt = connection.prepare(sqlQuery, cacheStmt);
 
@@ -46,6 +41,19 @@ public class SQLiteQuery {
 
 	public SQLiteQuery(SQLiteConnection connection, String sqlQuery) throws SQLiteException {
 		this(connection, sqlQuery, true);
+	}
+	
+	public int getColumnIndex(String colName) throws SQLiteException {
+		if (resultDesc.colIdxByColName.containsKey(colName) == false) {
+			throw new SQLiteException(-1, "undefined column '" + colName + "' in query: "+ this.queryString);
+		}
+
+		return resultDesc.colIdxByColName.get(colName);
+	}
+	
+
+	public String[] getColumnNames() {
+		return this.resultDesc.getColumnNames();
 	}
 
 	public SQLiteStatement getStatement() {
@@ -65,157 +73,7 @@ public class SQLiteQuery {
 		else
 			return false;
 	}
-
-	public SQLiteRecordIterator getRecords() throws SQLiteException {
-		return new SQLiteRecordIterator(this);
-	}
-
-	public void forEachRecord(ISQLiteRecordOperation op) throws SQLiteException {
-
-		if (this.isStatementDisposed() == false) {
-
-			// Iterate over each record
-			int idx = 0;
-			while (this.stmt.step()) {
-				op.execute(new SQLiteRecord(this), idx);
-				idx++;
-			}
-
-			// Dispose the statement
-			this.dispose();
-		}
-	}
 	
-	public <T> T[] extractRecords(ISQLiteRecordExtraction<T> extractor, T[] records) throws SQLiteException {
-
-		if (this.isStatementDisposed() == false) {
-			
-			int recordsCount = records.length;
-
-			// Iterate over each record
-			int idx = 0;
-			while (this.stmt.step() && idx < recordsCount) {
-				records[idx] = extractor.extract(new SQLiteRecord(this));
-				idx++;
-			}
-
-			// Dispose the statement
-			this.dispose();
-		}
-
-		return records;
-	}
-	
-	public <T> List<T> extractRecordList(ISQLiteRecordExtraction<T> extractor) throws SQLiteException {
-
-		List<T> records = new ArrayList<T>();
-		
-		if (this.isStatementDisposed() == false) {
-
-			// Iterate over each record
-			while (this.stmt.step()) {
-				records.add(extractor.extract(new SQLiteRecord(this)));
-			}
-
-			// Dispose the statement
-			this.dispose();
-		}
-
-		return records;
-	}
-
-	public <T> T extractRecord(ISQLiteRecordExtraction<T> extractor) throws SQLiteException {
-		this.stmt.step();
-		T obj = extractor.extract(new SQLiteRecord(this));
-		this.dispose();
-		return obj;
-	}
-
-	public String extractSingleString() throws SQLiteException {
-		this.stmt.step();
-		String result = this.stmt.columnString(0);
-		this.dispose();
-		return result;
-	}
-
-	public int extractSingleInt() throws SQLiteException {
-		this.stmt.step();
-		int result = this.stmt.columnInt(0);
-		this.dispose();
-		return result;
-	}
-
-	public int[] extractInts(int bufferLength) throws SQLiteException {
-
-		int[] buffer = new int[bufferLength];
-		int loadedInts = this.stmt.loadInts(0, buffer, 0, bufferLength);
-
-		this.dispose();
-
-		return Arrays.copyOfRange(buffer, 0, loadedInts);
-	}
-	
-	public long[] extractLongs(int bufferLength) throws SQLiteException {
-
-		long[] buffer = new long[bufferLength];
-		int loadedLongs = this.stmt.loadLongs(0, buffer, 0, bufferLength);
-
-		this.dispose();
-
-		return Arrays.copyOfRange(buffer, 0, loadedLongs);
-	}
-	
-	public float[] extractFloats(int bufferLength) throws SQLiteException {
-
-		float[] buffer = null;
-
-		if (this.isStatementDisposed() == false) {
-			
-			buffer = new float[bufferLength];
-
-			// Iterate over each record
-			int idx = 0;
-			while (this.stmt.step()) {
-				buffer[idx] = (float) this.stmt.columnDouble(0);
-				idx++;
-			}
-
-			// Dispose the statement
-			this.dispose();
-		} else {
-			buffer = new float[0];
-		}
-
-		return buffer;
-	}
-
-	public double extractSingleDouble() throws SQLiteException {
-		this.stmt.step();
-		double result = this.stmt.columnDouble(0);
-		this.dispose();
-		return result;
-	}
-
-	public long extractSingleLong() throws SQLiteException {
-		this.stmt.step();
-		long result = this.stmt.columnLong(0);
-		this.dispose();
-		return result;
-	}
-
-	public byte[] extractSingleBlob() throws SQLiteException {
-		this.stmt.step();
-		byte[] result = this.stmt.columnBlob(0);
-		this.dispose();
-		return result;
-	}
-
-	public InputStream extractStream() throws SQLiteException {
-		this.stmt.step();
-		InputStream result = this.stmt.columnStream(0);
-		this.dispose();
-		return result;
-	}
 
 	public SQLiteQuery bind(int index, double value) throws SQLiteException {
 		this.stmt.bind(index, value);
@@ -263,6 +121,204 @@ public class SQLiteQuery {
 
 	public OutputStream bindStream(int index, int bufferSize) throws SQLiteException {
 		return this.stmt.bindStream(index, bufferSize);
+	}
+
+	public SQLiteRecordIterator getRecordIterator() throws SQLiteException {
+		return new SQLiteRecordIterator(this);
+	}
+
+	public void forEachRecord(ISQLiteRecordOperation op) throws SQLiteException {
+
+		if (this.isStatementDisposed() == false) {
+
+			// Iterate over each record
+			int idx = 0;
+			while (this.stmt.step()) {
+				op.execute(new SQLiteRecord(this), idx);
+				idx++;
+			}
+
+			// Dispose the statement
+			this.dispose();
+		}
+	}
+	
+	public <T> T[] extractRecords(ISQLiteRecordExtraction<T> extractor, T[] records) throws SQLiteException {
+
+		if (this.isStatementDisposed() == false) {
+
+			int recordsCount = records.length;
+
+			// Iterate over each record
+			int idx = 0;
+			while (this.stmt.step() && idx < recordsCount) {
+				records[idx] = extractor.extract(new SQLiteRecord(this));
+				idx++;
+			}
+
+			// Dispose the statement
+			this.dispose();
+		}
+
+		return records;
+	}
+	
+	public <T> List<T> extractRecordList(ISQLiteRecordExtraction<T> extractor) throws SQLiteException {
+
+		List<T> records = new ArrayList<T>();
+		
+		if (this.isStatementDisposed() == false) {
+
+			// Iterate over each record
+			while (this.stmt.step()) {
+				records.add(extractor.extract(new SQLiteRecord(this)));
+			}
+
+			// Dispose the statement
+			this.dispose();
+		}
+
+		return records;
+	}
+
+	public <T> T extractRecord(ISQLiteRecordExtraction<T> extractor) throws SQLiteException {
+		this.stmt.step();
+		T obj = extractor.extract(new SQLiteRecord(this));
+		this.dispose();
+		return obj;
+	}
+	
+	public String[] extractStrings(int bufferLength) throws SQLiteException {
+
+		if (this.isStatementDisposed() == false) {
+			
+			String[] buffer = new String[bufferLength];
+
+			// Iterate over each record
+			int idx = 0;
+			while (this.stmt.step()) {
+				buffer[idx] = this.stmt.columnString(0);
+				idx++;
+			}
+
+			// Dispose the statement
+			this.dispose();
+			
+			return Arrays.copyOfRange(buffer, 0, idx - 1);
+		} else {
+			return new String[0];
+		}
+	}
+
+	public int[] extractInts(int bufferLength) throws SQLiteException {
+
+		int[] buffer = new int[bufferLength];
+		int loadedInts = this.stmt.loadInts(0, buffer, 0, bufferLength);
+
+		this.dispose();
+
+		return Arrays.copyOfRange(buffer, 0, loadedInts - 1);
+	}
+	
+	public long[] extractLongs(int bufferLength) throws SQLiteException {
+
+		long[] buffer = new long[bufferLength];
+		int loadedLongs = this.stmt.loadLongs(0, buffer, 0, bufferLength);
+
+		this.dispose();
+
+		return Arrays.copyOfRange(buffer, 0, loadedLongs - 1);
+	}
+	
+	public float[] extractFloats(int bufferLength) throws SQLiteException {
+
+		if (this.isStatementDisposed() == false) {
+			
+			float[] buffer = new float[bufferLength];
+
+			// Iterate over each record
+			int idx = 0;
+			while (this.stmt.step()) {
+				buffer[idx] = (float) this.stmt.columnDouble(0);
+				idx++;
+			}
+
+			// Dispose the statement
+			this.dispose();
+			
+			return Arrays.copyOfRange(buffer, 0, idx - 1);
+		} else {
+			return new float[0];
+		}
+
+	}
+	
+	public double[] extractDoubles(int bufferLength) throws SQLiteException {
+
+		double[] buffer = null;
+
+		if (this.isStatementDisposed() == false) {
+			
+			buffer = new double[bufferLength];
+
+			// Iterate over each record
+			int idx = 0;
+			while (this.stmt.step()) {
+				buffer[idx] = this.stmt.columnDouble(0);
+				idx++;
+			}
+
+			// Dispose the statement
+			this.dispose();
+			
+			return Arrays.copyOfRange(buffer, 0, idx - 1);
+		} else {
+			return new double[0];
+		}
+		
+	}
+	
+	public String extractSingleString() throws SQLiteException {
+		this.stmt.step();
+		String result = this.stmt.columnString(0);
+		this.dispose();
+		return result;
+	}
+
+	public int extractSingleInt() throws SQLiteException {
+		this.stmt.step();
+		int result = this.stmt.columnInt(0);
+		this.dispose();
+		return result;
+	}
+
+	public long extractSingleLong() throws SQLiteException {
+		this.stmt.step();
+		long result = this.stmt.columnLong(0);
+		this.dispose();
+		return result;
+	}
+	
+	public double extractSingleDouble() throws SQLiteException {
+		this.stmt.step();
+		double result = this.stmt.columnDouble(0);
+		this.dispose();
+		return result;
+	}
+
+	public byte[] extractSingleBlob() throws SQLiteException {
+		this.stmt.step();
+		if ( !stmt.hasRow() ) return null;
+		byte[] result = this.stmt.columnBlob(0);
+		this.dispose();
+		return result;
+	}
+
+	public InputStream extractSingleInputStream() throws SQLiteException {
+		this.stmt.step();
+		InputStream result = this.stmt.columnStream(0);
+		this.dispose();
+		return result;
 	}
 
 }

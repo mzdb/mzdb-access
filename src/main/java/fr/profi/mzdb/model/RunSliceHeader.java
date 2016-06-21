@@ -127,4 +127,13 @@ public class RunSliceHeader extends AbstractInMemoryIdGen implements Comparable<
 			return 1;
 	}
 
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "RunSliceHeader [id=" + id + ", msLevel=" + msLevel + ", number=" + number + ", beginMz=" + beginMz + ", endMz=" + endMz + ", runId=" + runId
+				+ "]";
+	}
+
 }

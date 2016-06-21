@@ -1,7 +1,6 @@
 package fr.profi.mzdb.utils.sqlite;
 
 import java.io.InputStream;
-import java.util.HashMap;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
@@ -12,40 +11,26 @@ import com.almworks.sqlite4java.SQLiteStatement;
  */
 public class SQLiteRecord {
 
-	protected SQLiteQuery sqliteQuery = null;
-	protected SQLiteStatement stmt = null;
-	protected HashMap<String, Integer> colIdxByColName = new HashMap<String, Integer>();
+	private SQLiteQuery sqliteQuery = null;
+	private SQLiteStatement stmt = null;
 
 	public SQLiteRecord(SQLiteQuery sqliteQuery) {
 		super();
 		this.sqliteQuery = sqliteQuery;
-		this.stmt = sqliteQuery.stmt;
-		this.colIdxByColName = sqliteQuery.resultDesc.colIdxByColName;
+		this.stmt = sqliteQuery.getStatement();
 	}
 	
 	public SQLiteStatement getStatement() {
 		return this.stmt;
 	}
-
-	public int getColumnIndex(String colName) throws SQLiteException {
-		if (this.colIdxByColName.containsKey(colName) == false) {
-			throw new SQLiteException(-1, "undefined column '" + colName + "' in query: "+ this.sqliteQuery.queryString);
-		}
-
-		return this.colIdxByColName.get(colName);
-	}
-
-	public String[] getColumnNames() {
-		return this.sqliteQuery.resultDesc.getColumnNames();
-	}
-
+	
 	// TODO: replace calls to name().toLowerCase() by toString() ?
 	public String columnString(Enum<?> enumeration) throws SQLiteException {
 		return this.columnString(enumeration.name().toLowerCase());
 	}
 
 	public String columnString(String columnName) throws SQLiteException {
-		return this.stmt.columnString(this.getColumnIndex(columnName));
+		return this.stmt.columnString(sqliteQuery.getColumnIndex(columnName));
 	}
 
 	public int columnInt(Enum<?> enumeration) throws SQLiteException {
@@ -53,7 +38,7 @@ public class SQLiteRecord {
 	}
 
 	public int columnInt(String columnName) throws SQLiteException {
-		return this.stmt.columnInt(this.getColumnIndex(columnName));
+		return this.stmt.columnInt(sqliteQuery.getColumnIndex(columnName));
 	}
 
 	public double columnDouble(Enum<?> enumeration) throws SQLiteException {
@@ -61,7 +46,7 @@ public class SQLiteRecord {
 	}
 
 	public double columnDouble(String columnName) throws SQLiteException {
-		return this.stmt.columnDouble(this.getColumnIndex(columnName));
+		return this.stmt.columnDouble(sqliteQuery.getColumnIndex(columnName));
 	}
 
 	public long columnLong(Enum<?> enumeration) throws SQLiteException {
@@ -69,7 +54,7 @@ public class SQLiteRecord {
 	}
 
 	public long columnLong(String columnName) throws SQLiteException {
-		return this.stmt.columnLong(this.getColumnIndex(columnName));
+		return this.stmt.columnLong(sqliteQuery.getColumnIndex(columnName));
 	}
 
 	public byte[] columnBlob(Enum<?> enumeration) throws SQLiteException {
@@ -77,7 +62,7 @@ public class SQLiteRecord {
 	}
 
 	public byte[] columnBlob(String columnName) throws SQLiteException {
-		return this.stmt.columnBlob(this.getColumnIndex(columnName));
+		return this.stmt.columnBlob(sqliteQuery.getColumnIndex(columnName));
 	}
 
 	public InputStream columnStream(Enum<?> enumeration) throws SQLiteException {
@@ -85,7 +70,7 @@ public class SQLiteRecord {
 	}
 
 	public InputStream columnStream(String columnName) throws SQLiteException {
-		return this.stmt.columnStream(this.getColumnIndex(columnName));
+		return this.stmt.columnStream(sqliteQuery.getColumnIndex(columnName));
 	}
 
 	public boolean columnNull(Enum<?> enumeration) throws SQLiteException {
@@ -93,7 +78,7 @@ public class SQLiteRecord {
 	}
 
 	public boolean columnNull(String columnName) throws SQLiteException {
-		return this.stmt.columnNull(this.getColumnIndex(columnName));
+		return this.stmt.columnNull(sqliteQuery.getColumnIndex(columnName));
 	}
 
 }

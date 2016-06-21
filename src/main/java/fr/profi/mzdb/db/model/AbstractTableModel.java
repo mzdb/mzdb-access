@@ -2,15 +2,15 @@ package fr.profi.mzdb.db.model;
 
 import java.util.List;
 
+import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 
-import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.db.model.params.IParamContainer;
 import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.db.model.params.param.UserText;
-import fr.profi.mzdb.io.reader.ParamTreeParser;
+import fr.profi.mzdb.io.reader.table.ParamTreeParser;
 import fr.profi.mzdb.utils.misc.AbstractInMemoryIdGen;
 import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
 
@@ -71,9 +71,9 @@ public abstract class AbstractTableModel extends AbstractInMemoryIdGen implement
 	 * 
 	 * @return the param tree
 	 */
-	public ParamTree getParamTree(MzDbReader mzDbReader) throws SQLiteException {
+	public ParamTree getParamTree(SQLiteConnection mzDbConnection) throws SQLiteException {
 		if (!this.hasParamTree()) {
-			this.loadParamTree(mzDbReader);
+			this.loadParamTree(mzDbConnection);
 		}
 		return paramTree;
 	}
@@ -93,9 +93,9 @@ public abstract class AbstractTableModel extends AbstractInMemoryIdGen implement
 	 * 
 	 * @param paramTree the new param tree
 	 */
-	protected void loadParamTree(MzDbReader mzDbReader) throws SQLiteException {
+	protected void loadParamTree(SQLiteConnection mzDbConnection) throws SQLiteException {
 		String sqlString = "SELECT param_tree FROM " + TABLE_NAME;
-		String paramTreeAsStr = new SQLiteQuery(mzDbReader.getConnection(), sqlString).extractSingleString();
+		String paramTreeAsStr = new SQLiteQuery(mzDbConnection, sqlString).extractSingleString();
 		this.paramTree = ParamTreeParser.parseParamTree(paramTreeAsStr);
 	}
 

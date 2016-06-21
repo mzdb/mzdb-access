@@ -4,22 +4,22 @@
   <parent>
     <artifactId>ProFI-Pom</artifactId>
     <groupId>fr.proline</groupId>
-    <version>0.0.6</version>
+    <version>0.2.0</version>
+    <relativePath/>
   </parent>
 
   <groupId>fr.profi</groupId>
   <artifactId>mzdb-access</artifactId>
-  <version>0.2.1</version>
+  <version>0.5.0</version>
 
   <description>The mzDB access Java library</description>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <sqlite4java.version>1.0.392</sqlite4java.version>
   </properties>
 
   <scm>
-    <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-access/tags/0.2.1</connection>
+    <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-access/trunk</connection>
   </scm>
 
   <dependencies>
@@ -36,6 +36,13 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
       <!-- Version inherited from ProFI-Pom -->
+    </dependency>
+    
+    <!-- Reactive streams -->
+    <dependency>
+      <groupId>io.reactivex</groupId>
+      <artifactId>rxjava</artifactId>
+      <version>1.0.13</version>
     </dependency>
 
     <!-- SQLite Jar then native libraries -->
@@ -68,51 +75,20 @@
     <dependency>
       <groupId>com.beust</groupId>
       <artifactId>jcommander</artifactId>
-      <version>1.47</version> <!-- Latest version checked on 21 january 2015 -->
+      <!-- Version inherited from ProFI-Pom -->
     </dependency>
 
-	<!-- JUnit testing -->
-	<dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <version>4.11</version>
-        <scope>test</scope>
-      </dependency>
+    <!-- JUnit testing -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <!-- Version inherited from ProFI-Pom -->
+      <scope>test</scope>
+    </dependency>
+    
   </dependencies>
 
   <build>
-
-    <pluginManagement>
-      <plugins>
-
-        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
-        <plugin>
-          <groupId>org.eclipse.m2e</groupId>
-          <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
-          <configuration>
-            <lifecycleMappingMetadata>
-              <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <versionRange>[2.8,)</versionRange>
-                    <goals>
-                      <goal>copy</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <execute />
-                  </action>
-                </pluginExecution>
-              </pluginExecutions>
-            </lifecycleMappingMetadata>
-          </configuration>
-        </plugin>
-
-      </plugins>
-    </pluginManagement>
 
     <plugins>
 
@@ -121,12 +97,14 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
-            <id>copy</id>
+            <id>copy-dependencies</id>
             <phase>compile</phase>
             <goals>
-              <goal>copy</goal>
+              <goal>copy-dependencies</goal>
             </goals>
+            
             <configuration>
+            <outputDirectory>${project.build.directory}/lib</outputDirectory>
               <artifactItems>
 
                 <artifactItem>
@@ -156,7 +134,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.18.1</version> <!-- Latest version checked on 21 january 2015 -->
+        <!-- Version inherited from ProFI-Pom -->
         <configuration>
           <systemProperties>
             <property>
@@ -170,7 +148,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>appassembler-maven-plugin</artifactId>
-        <version>1.9</version> <!-- Latest version checked on 21 january 2015 -->
+        <!-- Version inherited from ProFI-Pom -->
         <executions>
           <execution>
             <id>assemble</id>

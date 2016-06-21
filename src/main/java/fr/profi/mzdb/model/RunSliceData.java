@@ -17,21 +17,21 @@ public class RunSliceData extends AbstractInMemoryIdGen {
 	/** The id. */
 	protected final int id;
 
-	/** The scan slice list. */
-	protected final ScanSlice[] scanSliceList;
+	/** The spectrum slice list. */
+	protected final SpectrumSlice[] spectrumSliceList;
 
 	/**
 	 * Instantiates a new run slice data.
 	 * 
 	 * @param runSliceId
 	 *            the run slice id
-	 * @param scanSliceList
-	 *            the scan slice list
+	 * @param spectrumSliceList
+	 *            the spectrum slice list
 	 */
-	public RunSliceData(int runSliceId, ScanSlice[] scanSliceList) {
+	public RunSliceData(int runSliceId, SpectrumSlice[] spectrumSliceList) {
 		super();
 		this.id = runSliceId;
-		this.scanSliceList = scanSliceList;
+		this.spectrumSliceList = spectrumSliceList;
 	}
 
 	/**
@@ -44,12 +44,12 @@ public class RunSliceData extends AbstractInMemoryIdGen {
 	}
 
 	/**
-	 * Gets the scan slice list.
+	 * Gets the spectrum slice list.
 	 * 
-	 * @return the scan slice list
+	 * @return the spectrum slice list
 	 */
-	public ScanSlice[] getScanSliceList() {
-		return scanSliceList;
+	public SpectrumSlice[] getSpectrumSliceList() {
+		return spectrumSliceList;
 	}
 
 }

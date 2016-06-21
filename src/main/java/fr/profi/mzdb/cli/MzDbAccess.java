@@ -17,9 +17,9 @@ import com.beust.jcommander.Parameter;
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.io.writer.mgf.MgfWriter;
-import fr.profi.mzdb.io.writer.mgf.PrecursorMzComputation;
+import fr.profi.mzdb.io.writer.mgf.PrecursorMzComputationEnum;
 import fr.profi.mzdb.model.Peak;
-import fr.profi.mzdb.model.ScanHeader;
+import fr.profi.mzdb.model.SpectrumHeader;
 
 /***
  * This class allows to access to a mzDB file and to make some range queries on it. A list of putative
@@ -72,10 +72,10 @@ public class MzDbAccess {
 		private Double maxMz = 0.0;
 
 		@Parameter(names = { "-t1", "--mintime" }, description = "minimum elution time")
-		private Double minTime = 0.0;
+		private Float minTime = 0.0f;
 
 		@Parameter(names = { "-t2", "--maxtime" }, description = "maximum elution time")
-		private Double maxTime = 0.0;
+		private Float maxTime = 0.0f;
 	}
 
 	public static class CreateMgfCommand {
@@ -89,8 +89,8 @@ public class MzDbAccess {
 		@Parameter(names = { "-o", "--output_file_path" }, description = "mgf output file path", required = true)
 		private String outputFile = "";
 
-		@Parameter(names = { "-precmz", "--precursor_mz" }, description = "must be on of 'main_precursor_mz, selected_ion_mz, extracted, refined, refined_thermo'", required = false)
-		private PrecursorMzComputation precMzComputation = PrecursorMzComputation.MAIN_PRECURSOR_MZ;
+		@Parameter(names = { "-precmz", "--precursor_mz" }, description = "must be on of 'main_precursor_mz, selected_ion_mz, refined, refined_thermo'", required = false)
+		private PrecursorMzComputationEnum precMzComputation = PrecursorMzComputationEnum.MAIN_PRECURSOR_MZ;
 		
 		@Parameter(names = { "-mztol", "--mz_tol_ppm" }, description = "m/z tolerance used for precursor m/z value definition", required = false)
 		private float mzTolPPM = 20;
@@ -160,8 +160,8 @@ public class MzDbAccess {
 		String dbPath = epc.mzdbFile;
 		double minMz = epc.minMz;
 		double maxMz = epc.maxMz;
-		double minTime = epc.minTime;
-		double maxTime = epc.maxTime;
+		float minTime = epc.minTime;
+		float maxTime = epc.maxTime;
 
 		System.out.println("Running mzDBaccess with following parameters :");
 		System.out.println("- min_mz=" + minMz);
@@ -186,7 +186,7 @@ public class MzDbAccess {
 
 		// Retrieve peaks
 		try {
-			Peak[] peaks = mzDbInstance.getPeaks(minMz, maxMz, minTime, maxTime, 1);
+			Peak[] peaks = mzDbInstance.getMsPeaksInMzRtRanges(minMz, maxMz, minTime, maxTime);
 			if (peaks != null) {
 				for (Peak peak : peaks) {
 					println(peak.getMz() + "\t" + peak.getIntensity() + "\t" + peak.getLeftHwhm() + "\t"
@@ -218,13 +218,13 @@ public class MzDbAccess {
 		MzDbReader mzDbReader = null;
 		try {
 			mzDbReader = new MzDbReader(cmd.mzdbFile, true);
-			ScanHeader[] ms2ScanHeaders = mzDbReader.getMs2ScanHeaders();
+			SpectrumHeader[] ms2SpectrumHeaders = mzDbReader.getMs2SpectrumHeaders();
 
-			for (ScanHeader ms2ScanHeader: ms2ScanHeaders) {
-				ms2ScanHeader.loadScanList(mzDbReader);
-				ms2ScanHeader.getParamTree(mzDbReader);
+			for (SpectrumHeader ms2SpectrumHeader: ms2SpectrumHeaders) {
+				ms2SpectrumHeader.loadScanList(mzDbReader.getConnection());
+				ms2SpectrumHeader.getParamTree(mzDbReader.getConnection());
 
-				UserParam precMzParam = ms2ScanHeader.getScanList().getScans().get(0)
+				UserParam precMzParam = ms2SpectrumHeader.getScanList().getScans().get(0)
 						.getUserParam("[Thermo Trailer Extra]Monoisotopic M/Z:");
 
 				// <userParam name="[Thermo Trailer Extra]Monoisotopic M/Z:" value="815.21484375"

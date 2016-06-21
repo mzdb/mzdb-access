@@ -23,7 +23,7 @@ public class SQLiteRecordIterator implements Iterator<SQLiteRecord> {
 	public SQLiteRecordIterator(SQLiteQuery query) throws SQLiteException {
 		super();
 		this.query = query;
-		this.stmt = query.stmt;
+		this.stmt = query.getStatement();
 		this.nextRecord = null;
 	}
 

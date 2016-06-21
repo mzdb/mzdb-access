@@ -3,10 +3,11 @@ package fr.profi.mzdb.io.reader.iterator;
 import java.io.StreamCorruptedException;
 import java.util.Iterator;
 
+import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
-import fr.profi.mzdb.MzDbReader;
+import fr.profi.mzdb.AbstractMzDbReader;
 import fr.profi.mzdb.model.RunSlice;
 import fr.profi.mzdb.utils.sqlite.ISQLiteStatementConsumer;
 
@@ -56,15 +57,38 @@ public class LcMsRunSliceIterator extends AbstractRunSliceIterator implements It
 		};
 	}
 
-	public LcMsRunSliceIterator(MzDbReader mzDbReader) throws SQLiteException, StreamCorruptedException {
+	public LcMsRunSliceIterator(
+		AbstractMzDbReader mzDbReader,
+		SQLiteConnection connection
+	) throws SQLiteException, StreamCorruptedException {
 		// Set msLevel to 1
-		super(mzDbReader, allRunSlicesSqlQuery, 1, createAllRunSlicesStatementBinder() );
+		super(
+			mzDbReader.getRunSliceHeaderReader(),
+			mzDbReader.getSpectrumHeaderReader(),
+			mzDbReader.getDataEncodingReader(),
+			connection,
+			allRunSlicesSqlQuery,
+			1,
+			createAllRunSlicesStatementBinder()
+		);
 	}
 
-	public LcMsRunSliceIterator(MzDbReader mzDbReader, double minRunSliceMz, double maxRunSliceMz)
-			throws SQLiteException, StreamCorruptedException {		
+	public LcMsRunSliceIterator(
+		AbstractMzDbReader mzDbReader,
+		SQLiteConnection connection,
+		double minRunSliceMz,
+		double maxRunSliceMz
+	) throws SQLiteException, StreamCorruptedException {		
 		// Set msLevel to 1
-		super(mzDbReader, runSlicesSubsetSqlQuery, 1, createRunSlicesSubsetStatementBinder(minRunSliceMz,maxRunSliceMz) );
+		super(
+			mzDbReader.getRunSliceHeaderReader(),
+			mzDbReader.getSpectrumHeaderReader(),
+			mzDbReader.getDataEncodingReader(),
+			connection,
+			runSlicesSubsetSqlQuery,
+			1,
+			createRunSlicesSubsetStatementBinder(minRunSliceMz,maxRunSliceMz)
+		);
 	}
 
 }

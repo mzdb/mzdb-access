@@ -10,9 +10,9 @@ import org.slf4j.LoggerFactory;
 import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.DataMode;
 import fr.profi.mzdb.model.PeakEncoding;
-import fr.profi.mzdb.model.ScanData;
-import fr.profi.mzdb.model.ScanHeader;
-import fr.profi.mzdb.model.ScanSlice;
+import fr.profi.mzdb.model.SpectrumData;
+import fr.profi.mzdb.model.SpectrumHeader;
+import fr.profi.mzdb.model.SpectrumSlice;
 
 /**
  * Abstract Class containing commons objects and attributes through the implementations
@@ -31,51 +31,51 @@ public abstract class AbstractBlobReader implements IBlobReader {
 	
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	protected int _scansCount; // number of scan slices in the blob
-	protected int[] _scanSliceStartPositions; // list of scan slice starting positions in the blob
-	protected int[] _peaksCounts; // number of peaks in each scan slice of the blob
+	protected int _spectraCount; // number of spectrum slices in the blob
+	protected int[] _spectrumSliceStartPositions; // list of spectrum slice starting positions in the blob
+	protected int[] _peaksCounts; // number of peaks in each spectrum slice of the blob
 
-	protected Map<Long, ScanHeader> _scanHeaderById;
-	protected Map<Long, DataEncoding> _dataEncodingByScanId; // DataEncoding (32-64 bit, centroid/profile)
+	protected Map<Long, SpectrumHeader> _spectrumHeaderById;
+	protected Map<Long, DataEncoding> _dataEncodingBySpectrumId; // DataEncoding (32-64 bit, centroid/profile)
 
 	/**
 	 * Abstract constructor
 	 * 
-	 * @param scanHeaderById ScanHeader by scan id
-	 * @param dataEncById DataEncoding by scan id
+	 * @param spectrumHeaderById SpectrumHeader by spectrum id
+	 * @param dataEncById DataEncoding by spectrum id
 	 * @see DataEncoding
 	 */
 	protected AbstractBlobReader(
-		final long firstScanId,
-		final long lastScanId,
-		final Map<Long, ScanHeader> scanHeaderById,
-		final Map<Long, DataEncoding> dataEncodingByScanId
+		final long firstSpectrumId,
+		final long lastSpectrumId,
+		final Map<Long, SpectrumHeader> spectrumHeaderById,
+		final Map<Long, DataEncoding> dataEncodingBySpectrumId
 	) {
 
-		if( firstScanId > lastScanId ) {
-			throw new IllegalArgumentException("lastScanId must be greater or the same than firstScanId");
+		if( firstSpectrumId > lastSpectrumId ) {
+			throw new IllegalArgumentException("lastSpectrumId must be greater or the same than firstSpectrumId");
 		}
 		
-		this._scanHeaderById = scanHeaderById;
-		this._dataEncodingByScanId = dataEncodingByScanId;
+		this._spectrumHeaderById = spectrumHeaderById;
+		this._dataEncodingBySpectrumId = dataEncodingBySpectrumId;
 	}
 	
-	public long[] getAllScanIds() {
-		final int scansCount = this.getScansCount();
-		final long[] scanIds = new long[scansCount];
+	public long[] getAllSpectrumIds() {
+		final int spectraCount = this.getSpectraCount();
+		final long[] spectrumIds = new long[spectraCount];
 		
-		for (int i = 0; i < scansCount; i++) {
-			scanIds[i] = this.getScanIdAt(i);
+		for (int i = 0; i < spectraCount; i++) {
+			spectrumIds[i] = this.getSpectrumIdAt(i);
 		}
 		
-		return scanIds;
+		return spectrumIds;
 	}
 	
 	/**
-	 * Read scan slice data by using a ByteBuffer as input
+	 * Read spectrum slice data by using a ByteBuffer as input
 	 * 
-	 * @param bbByteBuffer array of bytes containing the ScanSlices of interest
-	 * @param scanSliceStartPos, the starting position
+	 * @param bbByteBuffer array of bytes containing the SpectrumSlices of interest
+	 * @param spectrumSliceStartPos, the starting position
 	 * @param peaksBytesLength, length of bytes used by peaks
 	 * @param structSize, size of the struct for a given peak
 	 * @param de, the corresponding DataEncoding
@@ -83,9 +83,9 @@ public abstract class AbstractBlobReader implements IBlobReader {
 	 * @param maxMz, the maximum m/z value
 	 * @return
 	 */
-	protected ScanData readScanSliceData(
+	protected SpectrumData readSpectrumSliceData(
 		final ByteBuffer bbByteBuffer,
-		final int scanSliceStartPos,
+		final int spectrumSliceStartPos,
 		final int peaksBytesLength,
 		final DataEncoding de,
 		final double minMz,
@@ -101,10 +101,10 @@ public abstract class AbstractBlobReader implements IBlobReader {
 		
 		// If no m/z range is provided
 		if( minMz < 0 && maxMz < 0) {
-			// Compute the peaks count for the whole scan slice
+			// Compute the peaks count for the whole spectrum slice
 			peaksCount = peaksBytesLength / structSize;
-			// Set peaksStartIdx value to scanSliceStartPos
-			peaksStartIdx = scanSliceStartPos;
+			// Set peaksStartIdx value to spectrumSliceStartPos
+			peaksStartIdx = spectrumSliceStartPos;
 		// Else determine the peaksStartIdx and peaksCount corresponding to provided m/z filters
 		} else {
 			
@@ -115,7 +115,7 @@ public abstract class AbstractBlobReader implements IBlobReader {
 			}
 			
 			for (int i = 0; i < peaksBytesLength; i += structSize) {
-				final int peakStartPos = scanSliceStartPos + i;
+				final int peakStartPos = spectrumSliceStartPos + i;
 				
 				double mz = 0.0;
 				switch (pe) {
@@ -177,34 +177,34 @@ public abstract class AbstractBlobReader implements IBlobReader {
 			
 		}
 		
-		// return the newly formed ScanData
-		return new ScanData(mzArray, intensityArray, lwhmArray, rwhmArray);
+		// return the newly formed SpectrumData
+		return new SpectrumData(mzArray, intensityArray, lwhmArray, rwhmArray);
 	}
 	
-	protected void checkScanIndexRange(int idx) {
-		if (idx < 0 || idx >= this.getScansCount() ) {
-			throw new IndexOutOfBoundsException("scan index out of bounds (idx="+idx+"), index counting starts at 0");
+	protected void checkSpectrumIndexRange(int idx) {
+		if (idx < 0 || idx >= this.getSpectraCount() ) {
+			throw new IndexOutOfBoundsException("spectrum index out of bounds (idx="+idx+"), index counting starts at 0");
 		}
 	}
 	
-	protected void checkDataEncodingIsNotNull(final DataEncoding de, final long scanId) throws StreamCorruptedException {
+	protected void checkDataEncodingIsNotNull(final DataEncoding de, final long spectrumId) throws StreamCorruptedException {
 		if (de == null) {
-			throw new StreamCorruptedException("Scared that the mzdb file is corrupted, scan id is: " + scanId);
-			//logger.error("Scared that the mzdb file is corrupted, scan id is: " + scanId);
+			throw new StreamCorruptedException("Scared that the mzdb file is corrupted, spectrum id is: " + spectrumId);
+			//logger.error("Scared that the mzdb file is corrupted, spectrum id is: " + spectrumId);
 			//System.exit(0);
 		}
 	}
 	
 	/**
-	 * @see IBlobReader#readAllScanSlices(int)
+	 * @see IBlobReader#readAllSpectrumSlices(int)
 	 */
-	public ScanSlice[] readAllScanSlices(final int runSliceId) {
+	public SpectrumSlice[] readAllSpectrumSlices(final int runSliceId) {
 		
-		int scansCount = this.getScansCount();
-		ScanSlice[] sl = new ScanSlice[scansCount];
+		int spectraCount = this.getSpectraCount();
+		SpectrumSlice[] sl = new SpectrumSlice[spectraCount];
 		
-		for (int i = 0; i < scansCount; i++) {
-			ScanSlice s = this.readScanSliceAt(i);
+		for (int i = 0; i < spectraCount; i++) {
+			SpectrumSlice s = this.readSpectrumSliceAt(i);
 			s.setRunSliceId(runSliceId);
 			sl[i] = s;
 		}

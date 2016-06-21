@@ -23,13 +23,13 @@ public class RunSlice {
 	 * 
 	 * @param header
 	 *            the header
-	 * @param scanData
-	 *            the scan data
+	 * @param spectrumData
+	 *            the spectrum data
 	 */
-	public RunSlice(RunSliceHeader header, RunSliceData scanData) {
+	public RunSlice(RunSliceHeader header, RunSliceData spectrumData) {
 		super();
 		this.header = header;
-		this.data = scanData;
+		this.data = spectrumData;
 	}
 
 	/**

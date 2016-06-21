@@ -8,7 +8,7 @@ import com.almworks.sqlite4java.SQLiteBlob;
 
 import fr.profi.mzdb.model.BoundingBox;
 import fr.profi.mzdb.model.DataEncoding;
-import fr.profi.mzdb.model.ScanHeader;
+import fr.profi.mzdb.model.SpectrumHeader;
 
 /**
  * The Class BoundingBoxBuilder.
@@ -24,15 +24,15 @@ public class BoundingBoxBuilder {
 	public static BoundingBox buildBB(
 		int bbId,
 		byte[] bytes,
-		long firstScanId,
-		long lastScanId,
-		Map<Long, ScanHeader> scanHeaderById,
-		Map<Long, DataEncoding> dataEncodingByScanId
+		long firstSpectrumId,
+		long lastSpectrumId,
+		Map<Long, SpectrumHeader> spectrumHeaderById,
+		Map<Long, DataEncoding> dataEncodingBySpectrumId
 	) throws StreamCorruptedException {
 		
-		BoundingBox bb = new BoundingBox(bbId, new BytesReader(bytes, firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId));
-		bb.setFirstScanId(firstScanId);
-		bb.setLastScanId(lastScanId);
+		BoundingBox bb = new BoundingBox(bbId, new BytesReader(bytes, firstSpectrumId, lastSpectrumId, spectrumHeaderById, dataEncodingBySpectrumId));
+		bb.setFirstSpectrumId(firstSpectrumId);
+		bb.setLastSpectrumId(lastSpectrumId);
 		
 		return bb;
 	}
@@ -40,15 +40,15 @@ public class BoundingBoxBuilder {
 	public static BoundingBox buildBB(
 		int bbId,
 		SQLiteBlob blob,
-		long firstScanId,
-		long lastScanId,
-		Map<Long, ScanHeader> scanHeaderById,
-		Map<Long, DataEncoding> dataEncodingByScanId
+		long firstSpectrumId,
+		long lastSpectrumId,
+		Map<Long, SpectrumHeader> spectrumHeaderById,
+		Map<Long, DataEncoding> dataEncodingBySpectrumId
 	) throws StreamCorruptedException {
 		
-		BoundingBox bb =  new BoundingBox(bbId, new SQLiteBlobReader(blob, firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId) );
-		bb.setFirstScanId(firstScanId);
-		bb.setLastScanId(lastScanId);
+		BoundingBox bb =  new BoundingBox(bbId, new SQLiteBlobReader(blob, firstSpectrumId, lastSpectrumId, spectrumHeaderById, dataEncodingBySpectrumId) );
+		bb.setFirstSpectrumId(firstSpectrumId);
+		bb.setLastSpectrumId(lastSpectrumId);
 		
 		return bb;
 	}
@@ -56,15 +56,15 @@ public class BoundingBoxBuilder {
 	public static BoundingBox buildBB(
 		int bbId,
 		InputStream stream,
-		long firstScanId,
-		long lastScanId,
-		Map<Long, ScanHeader> scanHeaderById,
-		Map<Long, DataEncoding> dataEncodingByScanId
+		long firstSpectrumId,
+		long lastSpectrumId,
+		Map<Long, SpectrumHeader> spectrumHeaderById,
+		Map<Long, DataEncoding> dataEncodingBySpectrumId
 	) {
 		
-		BoundingBox bb = new BoundingBox(bbId, new StreamReader(stream, firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId) );
-		bb.setFirstScanId(firstScanId);
-		bb.setLastScanId(lastScanId);
+		BoundingBox bb = new BoundingBox(bbId, new StreamReader(stream, firstSpectrumId, lastSpectrumId, spectrumHeaderById, dataEncodingBySpectrumId) );
+		bb.setFirstSpectrumId(firstSpectrumId);
+		bb.setLastSpectrumId(lastSpectrumId);
 		
 		return bb;
 	}

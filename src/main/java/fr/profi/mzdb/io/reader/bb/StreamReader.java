@@ -6,9 +6,9 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 import fr.profi.mzdb.model.DataEncoding;
-import fr.profi.mzdb.model.ScanData;
-import fr.profi.mzdb.model.ScanHeader;
-import fr.profi.mzdb.model.ScanSlice;
+import fr.profi.mzdb.model.SpectrumData;
+import fr.profi.mzdb.model.SpectrumHeader;
+import fr.profi.mzdb.model.SpectrumSlice;
 import fr.profi.mzdb.utils.primitives.BytesUtils;
 
 /**
@@ -25,20 +25,20 @@ public class StreamReader extends AbstractBlobReader {
 
 	/**
 	 * @param dataEnc
-	 *            ScanID the key, dataEncoding the value
+	 *            SpectrumID the key, dataEncoding the value
 	 * @param s
 	 *            inputStream
 	 * @see AbstractBlobReader
-	 * @see AbstractBlobReader#_dataEncodingByScanId
+	 * @see AbstractBlobReader#_dataEncodingBySpectrumId
 	 */
 	public StreamReader(
 		final InputStream inputStream,
-		final long firstScanId,
-		final long lastScanId,
-		final Map<Long, ScanHeader> scanHeaderById,
-		final Map<Long, DataEncoding> dataEncodingByScanId
+		final long firstSpectrumId,
+		final long lastSpectrumId,
+		final Map<Long, SpectrumHeader> spectrumHeaderById,
+		final Map<Long, DataEncoding> dataEncodingBySpectrumId
 	) {
-		super(firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId);
+		super(firstSpectrumId, lastSpectrumId, spectrumHeaderById, dataEncodingBySpectrumId);
 		
 		this._stream = inputStream;
 	}
@@ -55,9 +55,9 @@ public class StreamReader extends AbstractBlobReader {
 	}
 
 	/**
-	 * @see IBlobReader#getScansCount()
+	 * @see IBlobReader#getSpectraCount()
 	 */
-	public int getScansCount() {
+	public int getSpectraCount() {
 		// FIXME: this information should be added to the BB to optimize performances
 		return -1;
 	}
@@ -80,24 +80,24 @@ public class StreamReader extends AbstractBlobReader {
 	//}
 
 	/**
-	 * @see IBlobReader#idOfScanAt(int)
+	 * @see IBlobReader#idOfSpectrumAt(int)
 	 */
-	public long getScanIdAt(final int idx) {
+	public long getSpectrumIdAt(final int idx) {
 		
-		long lastScanId = 0;
+		long lastSpectrumId = 0;
 		try {
 			for (int j = 0; j <= idx; j++) {
 				
-				final byte[] scanIdBytes = new byte[4];
-				_stream.read(scanIdBytes);
-				lastScanId = (long) BytesUtils.bytesToInt(scanIdBytes, 0);
+				final byte[] spectrumIdBytes = new byte[4];
+				_stream.read(spectrumIdBytes);
+				lastSpectrumId = (long) BytesUtils.bytesToInt(spectrumIdBytes, 0);
 
 				final byte[] peaksCountBytes = new byte[4];
 				_stream.read(peaksCountBytes);
 				int peaksCount = BytesUtils.bytesToInt(peaksCountBytes, 0);
 				
-				final DataEncoding de = this._dataEncodingByScanId.get( lastScanId);
-				this.checkDataEncodingIsNotNull(de, lastScanId);
+				final DataEncoding de = this._dataEncodingBySpectrumId.get( lastSpectrumId);
+				this.checkDataEncodingIsNotNull(de, lastSpectrumId);
 				
 				_stream.skip(peaksCount * de.getPeakStructSize());
 			}
@@ -106,13 +106,13 @@ public class StreamReader extends AbstractBlobReader {
 			logger.error("IOException has been catched while closing stream", e);
 		}
 		
-		return lastScanId;
+		return lastSpectrumId;
 	}
 
 	/**
-	 * @see IBlobReader#nbPeaksOfScanAt(int)
+	 * @see IBlobReader#nbPeaksOfSpectrumAt(int)
 	 */
-	/*public int nbPeaksOfScanAt(int i) {
+	/*public int nbPeaksOfSpectrumAt(int i) {
 		int lastNbPeaks = 0;
 		try {
 			for (int j = 1; j <= i; j++) {
@@ -123,7 +123,7 @@ public class StreamReader extends AbstractBlobReader {
 				_stream.read(bytes);
 				int nbPeaks = BytesUtils.bytesToInt(bytes, 0);
 				lastNbPeaks = nbPeaks;
-				DataEncoding de = this._dataEncodingByScanId.get(id);
+				DataEncoding de = this._dataEncodingBySpectrumId.get(id);
 				int structSize = de.getPeakEncoding().getValue();
 				if (de.getMode() == DataMode.FITTED)
 					structSize += 8;
@@ -137,29 +137,29 @@ public class StreamReader extends AbstractBlobReader {
 	}*/
 	
 	/**
-	 * @see IBlobReader#readScanSliceAt(int)
+	 * @see IBlobReader#readSpectrumSliceAt(int)
 	 */
-	public ScanSlice readScanSliceAt(final int idx) {
-		return this._readScanSliceAt(idx, -1.0, -1.0);
+	public SpectrumSlice readSpectrumSliceAt(final int idx) {
+		return this._readSpectrumSliceAt(idx, -1.0, -1.0);
 	}
 
 	/**
-	 * @see IBlobReader#readScanSliceAt(int)
+	 * @see IBlobReader#readSpectrumSliceAt(int)
 	 */
-	private ScanSlice _readScanSliceAt(final int idx, final double minMz, final double maxMz) {
+	private SpectrumSlice _readSpectrumSliceAt(final int idx, final double minMz, final double maxMz) {
 		
 		byte[] peaksBytes = null;
-		long scanId = 0;
+		long spectrumId = 0;
 		int peaksCount = 0;
 		DataEncoding de = null;
 		
 		try {
 			for (int j = 0; j <= idx; j++) {
 				
-				final byte[] scanIdBytes = new byte[4];
-				_stream.read(scanIdBytes);
-				scanId = (long) BytesUtils.bytesToInt(scanIdBytes, 0);
-				de = this._dataEncodingByScanId.get(scanId);
+				final byte[] spectrumIdBytes = new byte[4];
+				_stream.read(spectrumIdBytes);
+				spectrumId = (long) BytesUtils.bytesToInt(spectrumIdBytes, 0);
+				de = this._dataEncodingBySpectrumId.get(spectrumId);
 				
 				final byte[] peaksCountBytes = new byte[4];
 				_stream.read(peaksCountBytes);
@@ -188,18 +188,18 @@ public class StreamReader extends AbstractBlobReader {
 			return null;
 		}
 
-		final ScanData scanSliceData = this.readScanSliceData(ByteBuffer.wrap(peaksBytes), 0, peaksBytes.length, de, minMz, maxMz);
+		final SpectrumData spectrumSliceData = this.readSpectrumSliceData(ByteBuffer.wrap(peaksBytes), 0, peaksBytes.length, de, minMz, maxMz);
 		
-		return new ScanSlice(_scanHeaderById.get(scanId), scanSliceData);
+		return new SpectrumSlice(_spectrumHeaderById.get(spectrumId), spectrumSliceData);
 	}
 	
-	// TODO: call this method from readScanSliceAt instead of calling readScanSliceAt from this methods
-	public ScanData readScanSliceDataAt(final int idx) {
-		return readScanSliceAt(idx).getData();
+	// TODO: call this method from readSpectrumSliceAt instead of calling readSpectrumSliceAt from this methods
+	public SpectrumData readSpectrumSliceDataAt(final int idx) {
+		return readSpectrumSliceAt(idx).getData();
 	}
 	
-	public ScanData readFilteredScanSliceDataAt(final int idx, final double minMz, final double maxMz) {
-		return this._readScanSliceAt(idx, minMz, maxMz).getData();
+	public SpectrumData readFilteredSpectrumSliceDataAt(final int idx, final double minMz, final double maxMz) {
+		return this._readSpectrumSliceAt(idx, minMz, maxMz).getData();
 	}
 
 }

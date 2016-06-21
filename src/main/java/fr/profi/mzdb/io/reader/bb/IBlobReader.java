@@ -1,7 +1,7 @@
 package fr.profi.mzdb.io.reader.bb;
 
-import fr.profi.mzdb.model.ScanData;
-import fr.profi.mzdb.model.ScanSlice;
+import fr.profi.mzdb.model.SpectrumData;
+import fr.profi.mzdb.model.SpectrumSlice;
 
 //import fr.profi.mzdb.io.reader.bb.AbstractBlobReader.BlobData;
 //import fr.profi.mzdb.model.DataEncoding;
@@ -21,56 +21,56 @@ public interface IBlobReader {
 	void disposeBlob();
 	
 	/**
-	 * @return the scans count in the blob.
+	 * @return the spectra count in the blob.
 	 */
-	int getScansCount();
+	int getSpectraCount();
 
 	/**
 	 * 
-	 * @param i index of scan starting at 1
-	 * @return long, the ID of the scan at the specified index in the blob
+	 * @param i index of spectrum starting at 1
+	 * @return long, the ID of the spectrum at the specified index in the blob
 	 */
-	long getScanIdAt(int i);
+	long getSpectrumIdAt(int i);
 	
-	long[] getAllScanIds();
+	long[] getAllSpectrumIds();
 
 	/**
 	 * 
-	 * @param i index of the wanted scan
-	 * @return int, the number of peaks of the scan specified by the index
+	 * @param i index of the wanted spectrum
+	 * @return int, the number of peaks of the spectrum specified by the index
 	 */
-	//int nbPeaksOfScanAt(int i);
+	//int nbPeaksOfSpectrumAt(int i);
 
 	/**
 	 * 
-	 * @param runSliceId needed to correctly annotate the ScanSlice
-	 * @return array of scanSlice representing the bounding box
+	 * @param runSliceId needed to correctly annotate the SpectrumSlice
+	 * @return array of spectrumSlice representing the bounding box
 	 */
-	ScanSlice[] readAllScanSlices(int runSliceId);
+	SpectrumSlice[] readAllSpectrumSlices(int runSliceId);
 
 	/**
 	 * 
 	 * @param idx
-	 *            index of specified scan
-	 * @return ScanSlice of the specified scan
+	 *            index of specified spectrum
+	 * @return SpectrumSlice of the specified spectrum
 	 */
-	ScanSlice readScanSliceAt(int idx);
+	SpectrumSlice readSpectrumSliceAt(int idx);
 	
 	/**
 	 * 
 	 * @param idx
-	 *            index of specified scan
-	 * @return ScanData of the specified scan
+	 *            index of specified spectrum
+	 * @return SpectrumData of the specified spectrum
 	 */
-	ScanData readScanSliceDataAt(int idx);
+	SpectrumData readSpectrumSliceDataAt(int idx);
 	
 	/**
 	 * 
 	 * @param idx
-	 *            index of specified scan
-	 * @return ScanData of the specified scan
+	 *            index of specified spectrum
+	 * @return SpectrumData of the specified spectrum
 	 */
-	ScanData readFilteredScanSliceDataAt(int idx, double minMz, double maxMz);
+	SpectrumData readFilteredSpectrumSliceDataAt(int idx, double minMz, double maxMz);
 
 
 

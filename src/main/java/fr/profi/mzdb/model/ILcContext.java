@@ -13,11 +13,11 @@ package fr.profi.mzdb.model;
 public interface ILcContext {
 
 	/**
-	 * Gets the scan id.
+	 * Gets the spectrum id.
 	 * 
-	 * @return the scan id
+	 * @return the spectrum id
 	 */
-	long getScanId();
+	long getSpectrumId();
 
 	/**
 	 * Gets the elution time.

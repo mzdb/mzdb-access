@@ -32,8 +32,8 @@ public class Peak implements Cloneable, Comparable<Peak> {
     protected ILcContext lcContext;
 
     // public float elutionTime; // only for LCMS maps
-    // public int scanId; // only for LCMS maps
-    // public int scanSliceId; // only for LCMS maps
+    // public int spectrumId; // only for LCMS maps
+    // public int spectrumSliceId; // only for LCMS maps
 
     /**
      * Instantiates a new peak.
@@ -126,12 +126,12 @@ public class Peak implements Cloneable, Comparable<Peak> {
 	}
 	
 	/**
-	 * Gets the ScanHeader.
+	 * Gets the SpectrumHeader.
 	 * 
-	 * @return the ScanHeader
+	 * @return the SpectrumHeader
 	 */
-	public ScanHeader getScanHeader() throws ClassCastException {
-		return (ScanHeader) lcContext;
+	public SpectrumHeader getSpectrumHeader() throws ClassCastException {
+		return (SpectrumHeader) lcContext;
 	}
 
     public boolean isNormalized() {
@@ -177,7 +177,7 @@ public class Peak implements Cloneable, Comparable<Peak> {
 	return intensityComp;
     }
 
-    // TODO: put private (also ins scan headers and other comparators)
+    // TODO: put private (also ins spectrum headers and other comparators)
     /** The intensity comp. */
     public static Comparator<Peak> intensityComp = new Comparator<Peak>() {
 	// @Override
