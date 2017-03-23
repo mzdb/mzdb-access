@@ -13,7 +13,7 @@ import fr.profi.mzdb.db.model.AbstractTableModel;
 import fr.profi.mzdb.db.model.params.Precursor;
 import fr.profi.mzdb.db.model.params.ScanList;
 import fr.profi.mzdb.io.reader.table.ParamTreeParser;
-import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
+import fr.profi.mzdb.util.sqlite.SQLiteQuery;
 
 // TODO: Auto-generated Javadoc
 /**

@@ -2,7 +2,7 @@ package fr.profi.mzdb.db.model;
 
 import fr.profi.mzdb.db.model.params.ComponentList;
 import fr.profi.mzdb.db.model.params.ParamTree;
-import fr.profi.mzdb.utils.misc.AbstractInMemoryIdGen;
+import fr.profi.mzdb.util.misc.AbstractInMemoryIdGen;
 
 // TODO: Auto-generated Javadoc
 /**

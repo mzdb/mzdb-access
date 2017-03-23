@@ -18,16 +18,15 @@ import com.almworks.sqlite4java.SQLiteException;
 
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.db.table.SpectrumTable;
-import fr.profi.mzdb.io.reader.cache.SpectrumHeaderReader;
 import fr.profi.mzdb.io.reader.iterator.SpectrumIterator;
 import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.PeakEncoding;
 import fr.profi.mzdb.model.Spectrum;
 import fr.profi.mzdb.model.SpectrumData;
 import fr.profi.mzdb.model.SpectrumHeader;
-import fr.profi.mzdb.utils.sqlite.ISQLiteRecordOperation;
-import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
-import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
+import fr.profi.mzdb.util.sqlite.ISQLiteRecordOperation;
+import fr.profi.mzdb.util.sqlite.SQLiteQuery;
+import fr.profi.mzdb.util.sqlite.SQLiteRecord;
 
 /**
  * @author MDB
@@ -37,28 +36,38 @@ public class MgfWriter {
 	public static String LINE_SPERATOR = System.getProperty("line.separator");
 	private static Integer precNotFound = 0;
 	final Logger logger = LoggerFactory.getLogger(MgfWriter.class);
-	
-	private static String titleQuery = "SELECT id, title FROM spectrum WHERE ms_level=2";
+
+	private static String titleQuery = "SELECT id, title FROM spectrum WHERE ms_level=?";
 	private final String mzDBFilePath;
+	private final int msLevel;
 	private MzDbReader mzDbReader;
 	private Map<Integer, String> titleBySpectrumId = new HashMap<Integer, String>();
 
 	/**
 	 * 
 	 * @param mzDBFilePath
+	 * @param msLevel
 	 * @throws SQLiteException
 	 * @throws FileNotFoundException
 	 * @throws ClassNotFoundException 
 	 */
-	public MgfWriter(String mzDBFilePath) throws SQLiteException, FileNotFoundException, ClassNotFoundException {
+	public MgfWriter(String mzDBFilePath, int msLevel) throws SQLiteException, FileNotFoundException, ClassNotFoundException {
+		if (msLevel < 2 || msLevel > 3) {
+			throw new IllegalArgumentException("msLevel must be 2 or 3");
+		}
+		
 		this.mzDBFilePath = mzDBFilePath;
+		this.msLevel = msLevel;
 
 		// Create reader
 		this.mzDbReader = new MzDbReader(this.mzDBFilePath, true);
 
 		this._fillTitleBySpectrumId();
 		this.logger.info("Number of loaded spectra titles: " + this.titleBySpectrumId.size());
-
+	}
+	
+	public MgfWriter(String mzDBFilePath) throws SQLiteException, FileNotFoundException, ClassNotFoundException {
+		this(mzDBFilePath, 2);
 	}
 
 	public MzDbReader getMzDbReader() {
@@ -84,18 +93,17 @@ public class MgfWriter {
 		} // end inner class
 
 		TitleByIdFiller f = new TitleByIdFiller(this.titleBySpectrumId);
-		
-		new SQLiteQuery(this.mzDbReader.getConnection(), titleQuery).forEachRecord(f);
+
+		new SQLiteQuery(this.mzDbReader.getConnection(), titleQuery).bind(1, this.msLevel).forEachRecord(f);
 	}
 
-
-	public void write(String mgfFile, PrecursorMzComputationEnum precComp, float mzTolPPM, float intensityCutoff, boolean exportProlineTitle ) throws SQLiteException, IOException {
+	public void write(String mgfFile, PrecursorMzComputationEnum precComp, float mzTolPPM, float intensityCutoff, boolean exportProlineTitle)
+		throws SQLiteException, IOException {
 		write(mgfFile, new DefaultPrecursorComputer(precComp, mzTolPPM), intensityCutoff, exportProlineTitle);
 	}
 
-
-	public void write(String mgfFile, IPrecursorComputation precComp, float intensityCutoff, boolean exportProlineTitle ) throws SQLiteException, IOException {
-
+	public void write(String mgfFile, IPrecursorComputation precComp, float intensityCutoff, boolean exportProlineTitle) throws SQLiteException, IOException {
+		
 		// treat path mgfFile ?
 		if (mgfFile.isEmpty())
 			mgfFile = this.mzDBFilePath + ".mgf";
@@ -103,12 +111,12 @@ public class MgfWriter {
 		// Reset precNotFound static var
 		MgfWriter.precNotFound = 0;
 		
-		// Configure the SpectrumHeaderReader in order to load all precursor lists and all scan list when reading spectra headers
-		SpectrumHeaderReader.loadPrecursorList = true;
-		SpectrumHeaderReader.loadScanList = true;
+		// Configure the mzDbReader in order to load all precursor lists and all scan list when reading spectra headers
+		mzDbReader.enablePrecursorListLoading();
+		mzDbReader.enableScanListLoading();
 
-		// Iterate over MS2 spectrum
-		final Iterator<Spectrum> spectrumIterator = new SpectrumIterator(mzDbReader, mzDbReader.getConnection(), 2);
+		// Iterate MSn spectra
+		final Iterator<Spectrum> spectrumIterator = new SpectrumIterator(mzDbReader, mzDbReader.getConnection(), msLevel);
 		final PrintWriter mgfWriter = new PrintWriter(new BufferedWriter(new FileWriter(mgfFile)));
 		final Map<Long, DataEncoding> dataEncodingBySpectrumId = this.mzDbReader.getDataEncodingBySpectrumId();
 
@@ -137,7 +145,7 @@ public class MgfWriter {
 		mgfWriter.flush();
 		mgfWriter.close();
 	}
-	
+
 	/**
 	 * 
 	 * @param spectrum
@@ -167,24 +175,25 @@ public class MgfWriter {
 		// Unpack data
 		final SpectrumHeader spectrumHeader = spectrum.getHeader();
 		String title;
-		if( exportProlineTitle == false ) title = this.titleBySpectrumId.get(spectrumHeader.getSpectrumId());
+		if (exportProlineTitle == false)
+			title = this.titleBySpectrumId.get(spectrumHeader.getSpectrumId());
 		else {
-			title = String.format("first_cycle:%d;last_cycle:%d;first_scan:%d;last_scan:%d;first_time:%.02f;last_time:%.02f;raw_file_identifier:%s;",
+			float timeInMinutes = spectrumHeader.getTime() / 60;
+			title = String.format("first_cycle:%d;last_cycle:%d;first_scan:%d;last_scan:%d;first_time:%.3f;last_time:%.3f;raw_file_identifier:%s;",
 				spectrumHeader.getCycle(),
 				spectrumHeader.getCycle(),
 				spectrumHeader.getInitialId(),
 				spectrumHeader.getInitialId(),
-				spectrumHeader.getTime(),
-				spectrumHeader.getTime(),
-				mzDbReader.getFirstSourceFileName().split("\\.")[0]
-			);
+				timeInMinutes,
+				timeInMinutes,
+				mzDbReader.getFirstSourceFileName().split("\\.")[0]);
 		}
-		
+
 		final float time = spectrumHeader.getElutionTime();
-		
+
 		final double precMz = precComp.getPrecursorMz(mzDbReader, spectrumHeader);
 		final int charge = precComp.getPrecursorCharge(mzDbReader, spectrumHeader);
-		
+
 		final MgfHeader mgfSpectrumHeader = charge != 0 ? new MgfHeader(title, precMz, charge, time) : new MgfHeader(title, precMz, time);
 
 		StringBuilder spectrumStringBuilder = new StringBuilder();
@@ -206,7 +215,7 @@ public class MgfWriter {
 		//final double intensityCutOff = 0.0; // new Percentile().evaluate(intsAsDouble, 5.0);
 
 		for (int i = 0; i < intsLength; ++i) {
-			
+
 			float intensity = ints[i];
 
 			// DBO: here we tried boost intensities (but this should be optional)
@@ -245,6 +254,5 @@ public class MgfWriter {
 
 		return spectrumStringBuilder.toString();
 	}
-
 
 }

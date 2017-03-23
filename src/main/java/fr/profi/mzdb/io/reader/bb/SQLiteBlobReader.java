@@ -12,7 +12,7 @@ import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.SpectrumData;
 import fr.profi.mzdb.model.SpectrumHeader;
 import fr.profi.mzdb.model.SpectrumSlice;
-import fr.profi.mzdb.utils.primitives.BytesUtils;
+import fr.profi.mzdb.util.primitives.BytesUtils;
 
 /**
  * Class for manipulating Blob in SQLite datafile using sqlite4java.SQLiteBlob

@@ -8,7 +8,7 @@ import fr.profi.mzdb.db.model.params.ComponentList;
 import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.model.params.Precursor;
 import fr.profi.mzdb.db.model.params.ScanList;
-import fr.profi.mzdb.utils.jaxb.XercesSAXParser;
+import fr.profi.mzdb.util.jaxb.XercesSAXParser;
 
 // TODO: Auto-generated Javadoc
 /**

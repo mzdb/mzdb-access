@@ -13,7 +13,7 @@ import fr.profi.mzdb.io.reader.cache.AbstractDataEncodingReader;
 import fr.profi.mzdb.io.reader.cache.AbstractRunSliceHeaderReader;
 import fr.profi.mzdb.io.reader.cache.AbstractSpectrumHeaderReader;
 import fr.profi.mzdb.model.*;
-import fr.profi.mzdb.utils.sqlite.ISQLiteStatementConsumer;
+import fr.profi.mzdb.util.sqlite.ISQLiteStatementConsumer;
 
 public abstract class AbstractRunSliceIterator extends AbstractSpectrumSliceIterator implements Iterator<RunSlice> {
 

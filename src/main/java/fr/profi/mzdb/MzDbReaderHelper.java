@@ -5,7 +5,7 @@ import java.util.concurrent.Callable;
 
 import fr.profi.mzdb.io.reader.cache.MzDbEntityCache;
 import fr.profi.mzdb.model.SpectrumSlice;
-import fr.profi.mzdb.utils.concurrent.Callback;
+import fr.profi.mzdb.util.concurrent.Callback;
 
 /**
  * @author JeT

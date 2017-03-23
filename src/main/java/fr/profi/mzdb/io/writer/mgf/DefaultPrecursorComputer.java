@@ -18,7 +18,7 @@ import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.model.Peak;
 import fr.profi.mzdb.model.SpectrumHeader;
 import fr.profi.mzdb.model.SpectrumSlice;
-import fr.profi.mzdb.utils.ms.MsUtils;
+import fr.profi.mzdb.util.ms.MsUtils;
 
 public class DefaultPrecursorComputer implements IPrecursorComputation {
 

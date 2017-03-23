@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import fr.profi.mzdb.utils.ms.MsUtils;
+import fr.profi.mzdb.util.ms.MsUtils;
 
 // TODO: Auto-generated Javadoc
 /**

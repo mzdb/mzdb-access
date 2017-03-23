@@ -14,10 +14,6 @@ import fr.profi.mzdb.model.SpectrumHeader;
  */
 public class SpectrumHeaderReader extends AbstractSpectrumHeaderReader {
 	
-	public static boolean loadParamTree = false;
-	public static boolean loadScanList = false;
-	public static boolean loadPrecursorList = false;
-	
 	private SQLiteConnection connection;
 	private MzDbReader mzDbReader = null;
 	

@@ -11,9 +11,9 @@ import com.almworks.sqlite4java.SQLiteException;
 import fr.profi.mzdb.AbstractMzDbReader;
 import fr.profi.mzdb.db.table.RunSliceTable;
 import fr.profi.mzdb.model.RunSliceHeader;
-import fr.profi.mzdb.utils.sqlite.ISQLiteRecordExtraction;
-import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
-import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
+import fr.profi.mzdb.util.sqlite.ISQLiteRecordExtraction;
+import fr.profi.mzdb.util.sqlite.SQLiteQuery;
+import fr.profi.mzdb.util.sqlite.SQLiteRecord;
 
 // TODO: Auto-generated Javadoc
 /**

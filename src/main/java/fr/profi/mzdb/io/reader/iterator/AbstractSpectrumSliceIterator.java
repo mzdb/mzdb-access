@@ -9,7 +9,7 @@ import com.almworks.sqlite4java.SQLiteStatement;
 import fr.profi.mzdb.io.reader.cache.AbstractDataEncodingReader;
 import fr.profi.mzdb.io.reader.cache.AbstractSpectrumHeaderReader;
 import fr.profi.mzdb.model.BoundingBox;
-import fr.profi.mzdb.utils.sqlite.ISQLiteStatementConsumer;
+import fr.profi.mzdb.util.sqlite.ISQLiteStatementConsumer;
 
 public abstract class AbstractSpectrumSliceIterator {
 

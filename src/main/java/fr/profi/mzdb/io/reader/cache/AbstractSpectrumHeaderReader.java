@@ -14,9 +14,9 @@ import fr.profi.mzdb.io.reader.table.ParamTreeParser;
 import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.PeakEncoding;
 import fr.profi.mzdb.model.SpectrumHeader;
-import fr.profi.mzdb.utils.sqlite.ISQLiteRecordExtraction;
-import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
-import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
+import fr.profi.mzdb.util.sqlite.ISQLiteRecordExtraction;
+import fr.profi.mzdb.util.sqlite.SQLiteQuery;
+import fr.profi.mzdb.util.sqlite.SQLiteRecord;
 
 /**
  * @author David Bouyssie
@@ -101,6 +101,8 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 	private ISQLiteRecordExtraction<SpectrumHeader> _getSpectrumHeaderExtractor(SQLiteConnection connection) throws SQLiteException {
 		if( _spectrumHeaderExtractor != null ) return _spectrumHeaderExtractor;
 		
+		AbstractMzDbReader mzDbReader = this.getMzDbReader();
+		
 		_spectrumHeaderExtractor = new ISQLiteRecordExtraction<SpectrumHeader>() {
 
 			public SpectrumHeader extract(SQLiteRecord record) throws SQLiteException {
@@ -139,13 +141,13 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 					bbFirstSpectrumId
 				);
 				
-				if (SpectrumHeaderReader.loadParamTree) {
+				if (mzDbReader.isParamTreeLoadingEnabled()) {
 					sh.setParamTree( ParamTreeParser.parseParamTree(stmt.columnString(SpectrumHeaderColIdx.paramTree)) );
 				}
-				if (SpectrumHeaderReader.loadScanList) {
+				if (mzDbReader.isScanListLoadingEnabled()) {
 					sh.setScanList(ParamTreeParser.parseScanList(stmt.columnString(SpectrumHeaderColIdx.scanList)));
 				}
-				if (SpectrumHeaderReader.loadPrecursorList && msLevel >= 2) {
+				if (mzDbReader.isPrecursorListLoadingEnabled() && msLevel >= 2) {
 					sh.setPrecursor(ParamTreeParser.parsePrecursor(stmt.columnString(SpectrumHeaderColIdx.precursorList)));
 				}
 	
@@ -274,7 +276,7 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 	 *             the SQ lite exception
 	 */
 	public Map<Long, SpectrumHeader> getMs1SpectrumHeaderById(SQLiteConnection connection) throws SQLiteException {
-
+		
 		if (this.getEntityCache() != null && this.getEntityCache().ms1SpectrumHeaderById != null) {
 			return this.getEntityCache().ms1SpectrumHeaderById;
 		} else {

@@ -11,8 +11,8 @@ import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.db.model.params.param.UserText;
 import fr.profi.mzdb.io.reader.table.ParamTreeParser;
-import fr.profi.mzdb.utils.misc.AbstractInMemoryIdGen;
-import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
+import fr.profi.mzdb.util.misc.AbstractInMemoryIdGen;
+import fr.profi.mzdb.util.sqlite.SQLiteQuery;
 
 // TODO: Auto-generated Javadoc
 /**

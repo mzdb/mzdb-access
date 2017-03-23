@@ -9,7 +9,7 @@ import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.SpectrumData;
 import fr.profi.mzdb.model.SpectrumHeader;
 import fr.profi.mzdb.model.SpectrumSlice;
-import fr.profi.mzdb.utils.primitives.BytesUtils;
+import fr.profi.mzdb.util.primitives.BytesUtils;
 
 /**
  * This class aloow to read a SQLite blob using a stream reader. We process data only in one direction in a
@@ -50,7 +50,7 @@ public class StreamReader extends AbstractBlobReader {
 		try {
 			_stream.close();
 		} catch (IOException e) {
-			logger.error("IOException has been catched while closing stream", e);
+			logger.error("IOException has been caught while closing stream", e);
 		}
 	}
 
@@ -73,7 +73,7 @@ public class StreamReader extends AbstractBlobReader {
 			while (_stream.read() != 0)
 				c++;
 		} catch (IOException e) {
-			logger.error("IOException catched while calculating the size of the stream", e);
+			logger.error("IOException caught while calculating the size of the stream", e);
 			e.printStackTrace();
 		}
 		return c;*/
@@ -103,7 +103,7 @@ public class StreamReader extends AbstractBlobReader {
 			}
 			_stream.close();
 		} catch (IOException e) {
-			logger.error("IOException has been catched while closing stream", e);
+			logger.error("IOException has been caught while closing stream", e);
 		}
 		
 		return lastSpectrumId;

@@ -89,7 +89,7 @@ public class MzDbReader extends AbstractMzDbReader {
 		this.connection.exec("PRAGMA journal_mode=OFF;");
 		this.connection.exec("PRAGMA temp_store=2;");
 		this.connection.exec("PRAGMA cache_size=-100000;"); // around 100 Mo
-		// connection.exec("PRAGMA mmap_size=3000000000"); // note: it may help for batch processing
+		this.connection.exec("PRAGMA mmap_size=2147418112;"); // around 2 GB of mapped-memory (it may help for batch processing)
 
 		// Create a temporary table containing a copy of the sepctrum table
 		// System.out.println("before CREATE TEMP TABLE");
@@ -670,12 +670,30 @@ public class MzDbReader extends AbstractMzDbReader {
 	public Iterator<RunSlice> getLcMsRunSliceIterator() throws SQLiteException, StreamCorruptedException {
 
 		// First pass to load the index
-		final SQLiteStatement fakeStmt = this.connection.prepare("SELECT * FROM bounding_box", false);
+		/*final SQLiteStatement fakeStmt = this.connection.prepare("SELECT data FROM bounding_box", false);
 		while (fakeStmt.step()) {
 		}
-		fakeStmt.dispose();
+		fakeStmt.dispose();*/
+		readWholeFile(this.dbLocation);
 
 		return new LcMsRunSliceIterator(this, connection);
+	}
+	
+	private static void readWholeFile(File file) {
+
+		try {
+			java.io.FileInputStream fis = new java.io.FileInputStream(file);
+			byte[] b = new byte[1024 * 1024];
+
+			while (fis.available() != 0) {
+				fis.read(b);
+			}
+
+			fis.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
 	}
 
 	/**
@@ -703,7 +721,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	public Iterator<RunSlice> getLcMsnRunSliceIterator(double minParentMz, double maxParentMz) throws SQLiteException, StreamCorruptedException {
 
 		// First pass to load the index
-		final SQLiteStatement fakeStmt = this.connection.prepare("SELECT * FROM bounding_box", false);
+		final SQLiteStatement fakeStmt = this.connection.prepare("SELECT data FROM bounding_box", false);
 		while (fakeStmt.step()) {
 		}
 		fakeStmt.dispose();

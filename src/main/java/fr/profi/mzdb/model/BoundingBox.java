@@ -1,8 +1,6 @@
 package fr.profi.mzdb.model;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 
 import com.almworks.sqlite4java.SQLiteException;
 
@@ -154,15 +152,15 @@ public class BoundingBox implements Comparable<BoundingBox> {
 	 * @return the spectrum slice[]
 	 */
 	public SpectrumSlice[] toSpectrumSlices() {
-	  
+		
+		SpectrumSlice[] spectrumSliceArray = _reader.readAllSpectrumSlices(this._runSliceId);
+		
 		// FIXME: remove this workaround when raw2mzDB has been fixed
 		// raw2mzDB is inserting multiple empty spectrum slices pointing to the same spectrum id
 		// Workaround added the 22/01/2015 by DBO
 		HashSet<Long> spectrumIdSet = new HashSet<Long>();
 		
-		List<SpectrumSlice> spectrumSliceList = new ArrayList<SpectrumSlice>();
-		
-		for (SpectrumSlice spectrumSlice : _reader.readAllSpectrumSlices(this._runSliceId)) {
+		for (SpectrumSlice spectrumSlice : spectrumSliceArray) {
 
 			long spectrumId = spectrumSlice.getHeader().getId();
 			
@@ -170,14 +168,12 @@ public class BoundingBox implements Comparable<BoundingBox> {
 				throw new IllegalArgumentException("duplicated spectrum id is: "+spectrumId);
 			}
 			
-			// if( spectrumSlice.getData().getMzList().length > 0 ) {
-			spectrumSliceList.add(spectrumSlice);
 			spectrumIdSet.add(spectrumId);
 		}
 
-		return spectrumSliceList.toArray(new SpectrumSlice[spectrumSliceList.size()]);
+		return spectrumSliceArray;
 	}
-
+	
 	/**
 	 * Spectrum slice of spectrum at.
 	 * 

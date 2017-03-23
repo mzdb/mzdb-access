@@ -7,7 +7,7 @@ import com.almworks.sqlite4java.SQLiteStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
+import fr.profi.mzdb.util.sqlite.SQLiteQuery;
 
 /**
  * Allows to manipulates data contained in the mzDB file.

@@ -14,8 +14,8 @@ import org.slf4j.LoggerFactory;
 
 import fr.profi.mzdb.db.model.Run;
 import fr.profi.mzdb.db.table.RunTable;
-import fr.profi.mzdb.utils.sqlite.ISQLiteRecordExtraction;
-import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
+import fr.profi.mzdb.util.sqlite.ISQLiteRecordExtraction;
+import fr.profi.mzdb.util.sqlite.SQLiteRecord;
 
 // TODO: Auto-generated Javadoc
 

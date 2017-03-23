@@ -7,8 +7,8 @@ import com.almworks.sqlite4java.SQLiteException;
 
 import fr.profi.mzdb.db.model.Software;
 import fr.profi.mzdb.db.table.SoftwareTable;
-import fr.profi.mzdb.utils.sqlite.ISQLiteRecordExtraction;
-import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
+import fr.profi.mzdb.util.sqlite.ISQLiteRecordExtraction;
+import fr.profi.mzdb.util.sqlite.SQLiteRecord;
 
 // TODO: Auto-generated Javadoc
 /**

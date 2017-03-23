@@ -42,6 +42,7 @@ public class BoundingBoxIterator extends AbstractStatementIterator<BoundingBox> 
 		
 		if( msLevel == 1 ) this.spectrumHeaderById = spectrumHeaderReader.getMs1SpectrumHeaderById(connection);
 		else if( msLevel == 2 ) this.spectrumHeaderById = spectrumHeaderReader.getMs2SpectrumHeaderById(connection);
+		else if( msLevel == 3 ) this.spectrumHeaderById = spectrumHeaderReader.getMs3SpectrumHeaderById(connection);
 		else throw new IllegalArgumentException("unsupported MS level: " + msLevel);
 		
 		this.dataEncodingBySpectrumId = dataEncodingReader.getDataEncodingBySpectrumId(connection);

@@ -2,11 +2,17 @@ package fr.profi.mzdb;
 
 import java.io.File;
 import java.io.StreamCorruptedException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.TreeMap;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,10 +29,13 @@ import fr.profi.mzdb.io.reader.cache.AbstractRunSliceHeaderReader;
 import fr.profi.mzdb.io.reader.cache.AbstractSpectrumHeaderReader;
 import fr.profi.mzdb.io.reader.cache.MzDbEntityCache;
 import fr.profi.mzdb.model.*;
-import fr.profi.mzdb.utils.ms.MsUtils;
-import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
-import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
-import fr.profi.mzdb.utils.sqlite.SQLiteRecordIterator;
+import fr.profi.mzdb.util.ms.MsUtils;
+import fr.profi.mzdb.util.sqlite.SQLiteQuery;
+import fr.profi.mzdb.util.sqlite.SQLiteRecord;
+import fr.profi.mzdb.util.sqlite.SQLiteRecordIterator;
+
+import rx.Observable;
+import rx.functions.Action1;
 
 /**
  * Allows to manipulates data contained in the mzDB file.
@@ -34,9 +43,13 @@ import fr.profi.mzdb.utils.sqlite.SQLiteRecordIterator;
  * @author David
  */
 public abstract class AbstractMzDbReader {
+	
+	// Define a new static scheduler
+	final protected static java.util.concurrent.ExecutorService computationThreadPool = java.util.concurrent.Executors.newCachedThreadPool();
+	final protected static rx.Scheduler rxCompScheduler = rx.schedulers.Schedulers.from(computationThreadPool);
 
-	final Logger logger = LoggerFactory.getLogger(AbstractMzDbReader.class);
-
+	final protected Logger logger = LoggerFactory.getLogger(AbstractMzDbReader.class);
+	
 	final protected BBSizes bbSizes = new BBSizes();
 
 	/** Some fields initialized in the constructor **/
@@ -44,6 +57,11 @@ public abstract class AbstractMzDbReader {
 	protected MzDbEntityCache entityCache = null;
 	protected MzDbHeader mzDbHeader = null;
 	protected IMzDBParamNameGetter _paramNameGetter = null;
+	
+	/** Some fields related to XML data loading **/
+	private boolean _loadParamTree = false;
+	private boolean _loadScanList = false;
+	private boolean _loadPrecursorList = false;
 
 	/**
 	 * The is no loss mode. If no loss mode is enabled, all data points will be encoded as highres, i.e. 64 bits mz and 64 bits int. No peak picking and not
@@ -69,6 +87,30 @@ public abstract class AbstractMzDbReader {
 	public abstract AbstractDataEncodingReader getDataEncodingReader();
 	public abstract AbstractSpectrumHeaderReader getSpectrumHeaderReader();
 	public abstract AbstractRunSliceHeaderReader getRunSliceHeaderReader();
+	
+	public boolean isParamTreeLoadingEnabled() {
+		return _loadParamTree;
+	}
+	
+	public void enableParamTreeLoading() {
+		_loadParamTree = true;
+	}
+	
+	public boolean isScanListLoadingEnabled() {
+		return _loadScanList;
+	}
+	
+	public void enableScanListLoading() {
+		_loadScanList = true;
+	}
+	
+	public boolean isPrecursorListLoadingEnabled() {
+		return _loadPrecursorList;
+	}
+	
+	public void enablePrecursorListLoading() {
+		_loadPrecursorList = true;
+	}
 
 	/**
 	 * Gets the entity cache.
@@ -309,6 +351,7 @@ public abstract class AbstractMzDbReader {
 			throws SQLiteException,
 			StreamCorruptedException {
 		return this._getSpectrumSlicesInRanges(minFragMz, maxFragMz, minRt, maxRt, 2, parentMz, connection);
+		//return this._getSpectrumSlicesInRangesUsingMultiThreading(minFragMz, maxFragMz, minRt, maxRt, 2, parentMz, connection);
 	}
 
 	private SpectrumSlice[] _getSpectrumSlicesInRanges(
@@ -410,6 +453,202 @@ public abstract class AbstractMzDbReader {
 			}
 		}
 
+		SpectrumSlice[] finalSpectrumSlices = new SpectrumSlice[spectrumDataListById.size()];
+
+		int spectrumIdx = 0;
+		for (Map.Entry<Long, ArrayList<SpectrumData>> entry : spectrumDataListById.entrySet()) {
+			Long spectrumId = entry.getKey();
+			ArrayList<SpectrumData> spectrumDataList = entry.getValue();
+			int peaksCount = peaksCountBySpectrumId.get(spectrumId);
+
+			SpectrumData finalSpectrumData = _mergeSpectrumDataList(spectrumDataList, peaksCount);
+
+			finalSpectrumSlices[spectrumIdx] = new SpectrumSlice(spectrumHeaderById.get(spectrumId), finalSpectrumData);
+
+			spectrumIdx++;
+		}
+
+		return finalSpectrumSlices;
+	}
+
+	private SpectrumSlice[] _getSpectrumSlicesInRangesUsingMultiThreading(
+		double minMz,
+		double maxMz,
+		float minRt,
+		float maxRt,
+		int msLevel,
+		double parentMz,
+		SQLiteConnection connection
+	) throws SQLiteException, StreamCorruptedException {
+
+		BBSizes sizes = this.getBBSizes();
+		float rtWidth = ((msLevel == 1) ? sizes.BB_RT_WIDTH_MS1 : sizes.BB_RT_WIDTH_MSn);
+		double mzHeight = ((msLevel == 1) ? sizes.BB_MZ_HEIGHT_MS1 : sizes.BB_MZ_HEIGHT_MSn);
+
+		double _minMz = minMz - mzHeight;
+		double _maxMz = maxMz + mzHeight;
+		float _minRt = minRt - rtWidth;
+		float _maxRt = maxRt + rtWidth;
+
+		// TODO: query using bounding_box_msn_rtree to use the min_ms_level information even for MS1 data ???
+		SQLiteQuery sqliteQuery;
+		if (msLevel == 1) {
+			String sqlQuery = "SELECT * FROM bounding_box WHERE id IN "
+					+ "(SELECT id FROM bounding_box_rtree WHERE min_mz >= ? AND max_mz <= ? AND min_time >= ? AND max_time <= ? )"
+					+ " ORDER BY first_spectrum_id";
+
+			sqliteQuery = new SQLiteQuery(connection, sqlQuery, false).bind(1, _minMz).bind(2, _maxMz).bind(3, _minRt).bind(4, _maxRt);
+
+		} else {
+			String sqlQuery = "SELECT * FROM bounding_box WHERE id IN " + "(SELECT id FROM bounding_box_msn_rtree" + " WHERE min_ms_level = " + msLevel
+					+ " AND max_ms_level = " + msLevel + " AND min_parent_mz <= ? AND max_parent_mz >= ? "
+					+ " AND min_mz >= ? AND max_mz <= ? AND min_time >= ? AND max_time <= ? )" + " ORDER BY first_spectrum_id";
+
+			sqliteQuery = new SQLiteQuery(connection, sqlQuery, false).bind(1, parentMz).bind(2, parentMz).bind(3, _minMz).bind(4, _maxMz).bind(5, _minRt)
+					.bind(6, _maxRt);
+		}
+
+		SQLiteRecordIterator recordIter = sqliteQuery.getRecordIterator();
+
+		Map<Long, SpectrumHeader> tmpSpectrumHeaderById = null;
+		if (msLevel == 1) {
+			tmpSpectrumHeaderById = this.getSpectrumHeaderReader().getMs1SpectrumHeaderById(connection);
+		} else if (msLevel == 2) {
+			tmpSpectrumHeaderById = this.getSpectrumHeaderReader().getMs2SpectrumHeaderById(connection);
+		} else {
+			throw new IllegalArgumentException("unsupported MS level: " + msLevel);
+		}
+		
+		final Map<Long, SpectrumHeader> spectrumHeaderById = tmpSpectrumHeaderById;
+		final Map<Long, DataEncoding> dataEncodingBySpectrumId = this.getDataEncodingReader().getDataEncodingBySpectrumId(connection);
+		
+		// Create a SpectrumData Observable that will help us to process them in parallel
+		Observable<ImmutablePair<Long,SpectrumData>> spectrumDataObservable = Observable.create( spectrumDataSubscriber -> {
+		
+			Observable<ImmutablePair<BoundingBox,Boolean>> bbObservable = Observable.create( bBoxSubscriber -> {
+				
+				try {
+	
+					// Iterate over bounding boxes
+					while (recordIter.hasNext()) {
+			
+						SQLiteRecord record = recordIter.next();
+			
+						int bbId = record.columnInt(BoundingBoxTable.ID);
+			
+						// TODO: remove me when the query is performed using msn_rtree
+						// if (getBoundingBoxMsLevel(bbId) != msLevel)
+						// continue;
+			
+						// Retrieve bounding box data
+						byte[] data = record.columnBlob(BoundingBoxTable.DATA);
+						long firstSpectrumId = record.columnLong(BoundingBoxTable.FIRST_SPECTRUM_ID);
+						long lastSpectrumId = record.columnLong(BoundingBoxTable.LAST_SPECTRUM_ID);
+			
+						// Build the Bounding Box
+						BoundingBox bb = BoundingBoxBuilder.buildBB(bbId, data, firstSpectrumId, lastSpectrumId, spectrumHeaderById, dataEncodingBySpectrumId);
+						// bb.setRunSliceId(record.columnInt(BoundingBoxTable.RUN_SLICE_ID));
+						
+						//System.out.println(Thread.currentThread().getName() + ": " +bb.getId() + " #spectra="+ bb.getSpectraCount());
+			
+						bBoxSubscriber.onNext(new ImmutablePair<>(bb,!recordIter.hasNext()));
+					}
+				
+				} catch (Exception e) {
+					//bBoxSubscriber.onError(e);
+					spectrumDataSubscriber.onError(e);
+				}
+		
+				if (!bBoxSubscriber.isUnsubscribed()) {
+					bBoxSubscriber.onCompleted();
+				}
+				
+			});
+			
+			// TODO: schedule the observer to process BBs in parallel threads
+			
+			Action1<ImmutablePair<BoundingBox,Boolean>> onEachBBox = new Action1<ImmutablePair<BoundingBox,Boolean>>() {
+	            @Override
+	            public void call(ImmutablePair<BoundingBox,Boolean> pair) {
+	            	
+	            	BoundingBox bb = pair.left;
+	            	Boolean isLastBB = pair.right;
+	            	//System.out.println(Thread.currentThread().getName() + ": " +bb.getId() + " #spectra="+ bb.getSpectraCount());
+	            	
+	        		// begins BB parsing
+	        		// should be done in parallel
+	        		IBlobReader bbReader = bb.getReader();
+	        		int bbSpectraCount = bbReader.getSpectraCount();
+	        		long[] bbSpectrumIds = bbReader.getAllSpectrumIds();
+	
+	        		// Iterate over each spectrum of the bounding box
+	        		for (int spectrumIdx = 0; spectrumIdx < bbSpectraCount; spectrumIdx++) {
+	
+	        			long spectrumId = bbSpectrumIds[spectrumIdx];
+	        			SpectrumHeader sh = spectrumHeaderById.get(spectrumId);
+	        			float currentRt = sh.getElutionTime();
+	
+	        			// Filtering on time dimension
+	        			if ((currentRt >= minRt) && (currentRt <= maxRt)) {
+	        				// Filtering on m/z dimension
+	        				SpectrumData spectrumSliceData = bbReader.readFilteredSpectrumSliceDataAt(spectrumIdx, minMz, maxMz);
+	        				
+	        				if (spectrumSliceData.isEmpty() == false) {
+	        					//System.out.println(Thread.currentThread().getName() + ", subscriber: " +spectrumSliceData.getMinMz() + " #peaks="+ spectrumSliceData.getPeaksCount());
+	        					
+	        					// Emit the spectrumSliceData and corresponding spectrum id in the observed stream
+	        					ImmutablePair<Long,SpectrumData> p = new ImmutablePair<>(spectrumId, spectrumSliceData);
+	        					spectrumDataSubscriber.onNext(p);
+	        				}
+	        			}
+	        		}
+	        		
+	        		if (isLastBB) {
+	        			spectrumDataSubscriber.onCompleted();
+	        		}
+	        		
+	        		// ends BB parsing
+	            }
+	        };
+			
+			bbObservable.observeOn(rxCompScheduler).subscribe(
+				onEachBBox,
+				(error) -> System.out.println("Error during BBs reading" + error.getMessage()),
+				() -> {} //System.out.println("Got all BBs!")
+			);
+		});
+		
+		TreeMap<Long, ArrayList<SpectrumData>> spectrumDataListById = new TreeMap<>();
+		HashMap<Long, Integer> peaksCountBySpectrumId = new HashMap<>();
+		
+		Action1<ImmutablePair<Long,SpectrumData>> onEachSpectrumData = new Action1<ImmutablePair<Long,SpectrumData>>() {
+            @Override
+            public void call(ImmutablePair<Long,SpectrumData> pair) {
+            	
+            	Long spectrumId = pair.left;
+            	SpectrumData spectrumSliceData = pair.right;
+            	
+            	//System.out.println(Thread.currentThread().getName() + ", observer: " +spectrumSliceData.getMinMz() + " #peaks="+ spectrumSliceData.getPeaksCount());
+            	
+        		if (spectrumDataListById.containsKey(spectrumId) == false) {
+        			spectrumDataListById.put(spectrumId, new ArrayList<SpectrumData>());
+        			peaksCountBySpectrumId.put(spectrumId, 0);
+        		}
+        		spectrumDataListById.get(spectrumId).add(spectrumSliceData);
+        		peaksCountBySpectrumId.put(spectrumId, peaksCountBySpectrumId.get(spectrumId) + spectrumSliceData.getPeaksCount());
+            }
+        };
+		
+		spectrumDataObservable.toBlocking().subscribe(
+			onEachSpectrumData,
+			(error) -> System.out.println("Error during slices reading" + error.getMessage()),
+			() -> {} //System.out.println("Got all slices!")
+		);
+		
+		// TODO: create a method that returns the spectrumSliceData stream without post-processing ?
+		//System.out.println(Thread.currentThread().getName() + ", spectrumDataListById.size: "+ spectrumDataListById.size());
+
+		// Post-process the HashMap spectrumDataListById to produce a final array of spectrum slices
 		SpectrumSlice[] finalSpectrumSlices = new SpectrumSlice[spectrumDataListById.size()];
 
 		int spectrumIdx = 0;

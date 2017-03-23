@@ -14,10 +14,6 @@ import rx.Observable;
  */
 public class SpectrumHeaderAsyncReader extends AbstractSpectrumHeaderReader {
 	
-	public static boolean loadParamTree = false;
-	public static boolean loadScanList = false;
-	public static boolean loadPrecursorList = false;
-	
 	/** The mzDB reader. */
 	private MzDbAsyncReader mzDbReader = null;
 	

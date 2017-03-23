@@ -20,9 +20,9 @@ import fr.profi.mzdb.io.reader.iterator.LcMsnRunSliceIterator;
 import fr.profi.mzdb.io.reader.iterator.SpectrumIterator;
 import fr.profi.mzdb.io.reader.table.*;
 import fr.profi.mzdb.model.*;
-import fr.profi.mzdb.utils.sqlite.ISQLiteConnectionFunction;
-import fr.profi.mzdb.utils.sqlite.SQLiteJobWrapper;
-import fr.profi.mzdb.utils.sqlite.SQLiteObservableJob;
+import fr.profi.mzdb.util.sqlite.ISQLiteConnectionFunction;
+import fr.profi.mzdb.util.sqlite.SQLiteJobWrapper;
+import fr.profi.mzdb.util.sqlite.SQLiteObservableJob;
 
 import rx.Observable;
 
@@ -156,9 +156,17 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 
 	/**
 	 * close the connection to avoid memory leaks.
+	 * @throws InterruptedException 
 	 */
 	public void close() {
-		this.queue.stop(false);
+		this.queue.stop(true);
+		logger.debug("Waiting for Job queue to finish");
+		try {
+			this.queue.join();
+		} catch (InterruptedException e) {
+			logger.error(e.getMessage());
+			throw new RuntimeException(e);
+		}
 	}
 	
 	@Override

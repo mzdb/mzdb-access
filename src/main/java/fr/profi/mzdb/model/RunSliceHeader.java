@@ -4,7 +4,7 @@
  */
 package fr.profi.mzdb.model;
 
-import fr.profi.mzdb.utils.misc.AbstractInMemoryIdGen;
+import fr.profi.mzdb.util.misc.AbstractInMemoryIdGen;
 
 // TODO: Auto-generated Javadoc
 /**

@@ -48,7 +48,7 @@ public abstract class AbstractStatementIterator<E> implements Iterator<E>, IStat
 			}
 
 		} catch (SQLiteException e) {
-			logger.error("SQLiteException has been catched: ", e);
+			logger.error("SQLiteException has been caught: ", e);
 			return false;
 		}
 	}
@@ -59,7 +59,7 @@ public abstract class AbstractStatementIterator<E> implements Iterator<E>, IStat
 			this.nextElem = this.extractObject(statement);
 			return nextElem;
 		} catch (Exception e) {
-			logger.error("Exception has been catched: ", e);
+			logger.error("Exception has been caught: ", e);
 			// this.nextElem = null;
 			// don't throw exception => we have a problem with the statement which is
 			// closing automatically

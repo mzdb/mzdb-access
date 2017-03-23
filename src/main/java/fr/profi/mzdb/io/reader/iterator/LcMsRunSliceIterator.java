@@ -9,7 +9,7 @@ import com.almworks.sqlite4java.SQLiteStatement;
 
 import fr.profi.mzdb.AbstractMzDbReader;
 import fr.profi.mzdb.model.RunSlice;
-import fr.profi.mzdb.utils.sqlite.ISQLiteStatementConsumer;
+import fr.profi.mzdb.util.sqlite.ISQLiteStatementConsumer;
 
 //import static fr.profi.mzdb.utils.lambda.JavaStreamExceptionWrappers.rethrowConsumer;
 

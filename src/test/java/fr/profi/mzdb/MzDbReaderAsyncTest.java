@@ -21,7 +21,8 @@ import fr.profi.mzdb.model.Peak;
 import fr.profi.mzdb.model.RunSlice;
 import fr.profi.mzdb.model.SpectrumHeader;
 import fr.profi.mzdb.model.SpectrumSlice;
-import fr.profi.mzdb.utils.sqlite.SQLite4JavaTest;
+import fr.profi.mzdb.util.sqlite.SQLite4JavaTest;
+
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.observers.TestSubscriber;
@@ -753,6 +754,66 @@ public class MzDbReaderAsyncTest {
 		}
 	}
 
+	/** this test uses local network connection. It may not pass if network configuration change */
+	//@Test
+	public void XicBugTest() {
+		final float mzOk = 470.7606f;
+		final float rtOk = 55.24f*60f;
+		final float mzNok = 709.8413f;
+		final float rtNok = 28.33f*60f;
+		final float tol = 711f;
+//		final String filename = "D:\\LCMS\\raw_files\\Fichiers Gamme 2ug Velos ETD\\OEMMA121101_63.raw.mzdb";
+		final String filename = "\\\\TOL-BRANDIR\\mzdb\\Karima Chaoui\\Gamme WP4\\QEKAC141027_35.raw.mzDB";
+
+		File file = new File(filename);
+
+		try {
+			Assert.assertTrue("file does not exist", file.isFile());
+			MzDbAsyncReader mzdbReader = new MzDbAsyncReader(file, true);
+
+			// create reader in main thread
+			TestSubscriber<Peak[]> xicTester = new TestSubscriber<>();
+
+			Assert.assertNotNull("invalid file", mzdbReader);
+			mzdbReader.getMsXic(mzOk, tol, rtOk -100, rtOk + 100, XicMethod.NEAREST).subscribe(xicTester);
+			xicTester.awaitTerminalEvent(1, TimeUnit.MINUTES);
+			xicTester.assertNoErrors();
+			List<Peak[]> resultOk = xicTester.getOnNextEvents();
+			Iterator<Peak[]> peaksIte = resultOk.iterator();
+			while ( peaksIte.hasNext() ) {
+				System.out.println("\n\n\nPeakList Ok" );
+				Peak[] peaks = peaksIte.next();
+				for ( int nPeak = 0; nPeak < peaks.length; nPeak++ ) {
+					System.out.println(peaks[nPeak].getMz() + ";" + peaks[nPeak].getIntensity() );
+				}
+			}
+
+			
+			TestSubscriber<Peak[]> xicTester2 = new TestSubscriber<>();
+			mzdbReader.getMsXic(mzNok, tol,rtNok -100, rtNok + 100, XicMethod.NEAREST).subscribe(xicTester2);
+			xicTester2.awaitTerminalEvent(1, TimeUnit.MINUTES);
+			xicTester2.assertNoErrors();
+			List<Peak[]> resultNok = xicTester2.getOnNextEvents();
+			Assert.assertNotNull(resultNok);
+			Iterator<Peak[]> peaksIte2 = resultNok.iterator();
+			while ( peaksIte2.hasNext() ) {
+				System.out.println("\n\n\nPeakList Nok" );
+				Peak[] peaks = peaksIte2.next();
+				for ( int nPeak = 0; nPeak < peaks.length; nPeak++ ) {
+					System.out.println(peaks[nPeak].getMz() + ";" + peaks[nPeak].getIntensity() );
+				}
+				
+			}
+
+		} catch (Throwable e) {
+			e.printStackTrace();
+			Assert.fail("Exception " + e.getMessage() + " for "
+					+ file.getAbsolutePath());
+		}
+
+	}
+	
+	
 	// End tests
 
 }

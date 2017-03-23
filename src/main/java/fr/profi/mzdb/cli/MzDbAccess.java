@@ -3,6 +3,7 @@ package fr.profi.mzdb.cli;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.StreamCorruptedException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -89,7 +90,10 @@ public class MzDbAccess {
 		@Parameter(names = { "-o", "--output_file_path" }, description = "mgf output file path", required = true)
 		private String outputFile = "";
 
-		@Parameter(names = { "-precmz", "--precursor_mz" }, description = "must be on of 'main_precursor_mz, selected_ion_mz, refined, refined_thermo'", required = false)
+		@Parameter(names = { "-ms", "--ms_level" }, description = "the MS level to export", required = false)
+		private int msLevel = 2;
+
+		@Parameter(names = { "-precmz", "--precursor_mz" }, description = "must be one of 'main_precursor_mz, selected_ion_mz, refined, refined_thermo'", required = false)
 		private PrecursorMzComputationEnum precMzComputation = PrecursorMzComputationEnum.MAIN_PRECURSOR_MZ;
 		
 		@Parameter(names = { "-mztol", "--mz_tol_ppm" }, description = "m/z tolerance used for precursor m/z value definition", required = false)
@@ -115,7 +119,7 @@ public class MzDbAccess {
 	 * @param args
 	 * @throws SQLiteException
 	 */
-	public static void main(String[] args) throws SQLiteException {
+	public static void main(String[] args) {
 
 		Locale englishLocale = Locale.ENGLISH;
 		Locale.setDefault(englishLocale);
@@ -137,15 +141,22 @@ public class MzDbAccess {
 				printAvailableCommands(jc);
 				System.exit(1);
 			}
+			
 			if (parsedCommand.equals("extract_peaks")) {
 				extractPeaks(xicCmd);
 			} else if (parsedCommand.equals("create_mgf")) {
 				createMgf(mgfCmd);
 			} else if (parsedCommand.equals("debug")) {
 				debug(dbgCmd);
+			} else {
+				println("Unknown command: "+ parsedCommand);
+				printAvailableCommands(jc);
+				System.exit(1);
 			}
+			
 		} catch (Exception e) {
 			e.printStackTrace();
+			System.exit(1);
 		}
 	}
 
@@ -156,7 +167,7 @@ public class MzDbAccess {
 		}
 	}
 
-	private static Peak[] extractPeaks(ExtractPeaksCommand epc) {
+	private static void extractPeaks(ExtractPeaksCommand epc) throws ClassNotFoundException, FileNotFoundException, SQLiteException, StreamCorruptedException {
 		String dbPath = epc.mzdbFile;
 		double minMz = epc.minMz;
 		double maxMz = epc.maxMz;
@@ -173,16 +184,7 @@ public class MzDbAccess {
 		println("accessing to mzDB located at " + dbPath);
 
 		// Instantiate the mzDB
-		MzDbReader mzDbInstance = null;
-		try {
-			mzDbInstance = new MzDbReader(new File(dbPath), true);
-		} catch (SQLiteException e) {
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
+		MzDbReader mzDbInstance = new MzDbReader(new File(dbPath), true);
 
 		// Retrieve peaks
 		try {
@@ -193,15 +195,10 @@ public class MzDbAccess {
 							+ peak.getRightHwhm());
 				}
 			}
-			return peaks;
-		} catch (SQLiteException e) {
-			e.printStackTrace();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			
+		} finally {
+		  mzDbInstance.close();
 		}
-		mzDbInstance.close();
-		return null;
 	}
 
 	private static void createMgf(CreateMgfCommand cmd) throws SQLiteException, IOException, ClassNotFoundException {
@@ -209,15 +206,15 @@ public class MzDbAccess {
 		logger.info("Creating MGF File for mzDB at: " + cmd.mzdbFile);
 		logger.info("Precursor m/z values will be defined using the method: " + cmd.precMzComputation);
 
-		MgfWriter writer = new MgfWriter(cmd.mzdbFile);
+		MgfWriter writer = new MgfWriter(cmd.mzdbFile, cmd.msLevel);
 		writer.write(cmd.outputFile, cmd.precMzComputation, cmd.mzTolPPM, cmd.intensityCutoff, cmd.exportProlineTitle);
 	}
 
-	private static void debug(DebugCommand cmd) throws SQLiteException, FileNotFoundException {
+	private static void debug(DebugCommand cmd) throws SQLiteException, FileNotFoundException, ClassNotFoundException {
 
-		MzDbReader mzDbReader = null;
+		MzDbReader mzDbReader = new MzDbReader(cmd.mzdbFile, true);
+		
 		try {
-			mzDbReader = new MzDbReader(cmd.mzdbFile, true);
 			SpectrumHeader[] ms2SpectrumHeaders = mzDbReader.getMs2SpectrumHeaders();
 
 			for (SpectrumHeader ms2SpectrumHeader: ms2SpectrumHeaders) {
@@ -235,15 +232,8 @@ public class MzDbAccess {
 				break;
 			}
 
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (SQLiteException e) {
-			e.printStackTrace();
 		} finally {
-			if (mzDbReader != null)
-				mzDbReader.close();
+			mzDbReader.close();
 		}
 
 	}
